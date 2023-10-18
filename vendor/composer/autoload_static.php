@@ -11,12 +11,20 @@ class ComposerStaticInit18d85af8eeba66ebd6c9a202da861566
         array (
             'Iqbalatma\\LaravelJwtAuthentication\\' => 35,
         ),
+        'F' => 
+        array (
+            'Firebase\\JWT\\' => 13,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
         'Iqbalatma\\LaravelJwtAuthentication\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
+        ),
+        'Firebase\\JWT\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/firebase/php-jwt/src',
         ),
     );
 

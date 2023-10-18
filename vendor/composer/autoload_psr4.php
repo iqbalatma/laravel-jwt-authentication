@@ -7,4 +7,5 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Iqbalatma\\LaravelJwtAuthentication\\' => array($baseDir . '/src'),
+    'Firebase\\JWT\\' => array($vendorDir . '/firebase/php-jwt/src'),
 );
