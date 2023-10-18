@@ -1,0 +1,15 @@
+{
+    "name": "iqbalatma/laravel-jwt-authentication",
+    "autoload": {
+        "psr-4": {
+            "Iqbalatma\\LaravelJwtAuthentication\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Iqbal Atma Muliawan",
+            "email": "iqbalatma@gmail.com"
+        }
+    ],
+    "require": {}
+}
