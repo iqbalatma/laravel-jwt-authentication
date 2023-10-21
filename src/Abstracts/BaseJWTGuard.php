@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Abstracts;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Events\Dispatcher;
+use Iqbalatma\LaravelJwtAuthentication\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
 abstract class BaseJWTGuard implements Guard
@@ -14,6 +15,9 @@ abstract class BaseJWTGuard implements Guard
     protected $name = 'iqbalatma.jwt';
 
     protected Dispatcher $events;
+    protected JWTService $jwtService;
+    protected string $accessToken;
+    protected string $refreshToken;
 
     /**
      * Used to check is user credential is valid and make sure first param is not null
