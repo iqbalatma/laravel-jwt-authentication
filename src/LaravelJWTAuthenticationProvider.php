@@ -4,6 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication;
 
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
 
@@ -23,8 +24,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTService();
         });
 
-        $router = $this->app['router'];
-        $router->aliasMiddleware('auth.jwt', Authenticate::class);
+        Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }
 
     /**

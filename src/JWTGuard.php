@@ -2,10 +2,12 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
+use App\Models\Auth\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 
 /**
  * @method static attempt()
@@ -39,12 +41,17 @@ class JWTGuard extends BaseJWTGuard
         return $this->hasValidCredentials($user, $credentials);
     }
 
+    public function setIqbal(){
+        $this->user = User::first();
+    }
+
 
     /**
      * Use to attempt login user using credentials
      * @param array $credentials
      * @param bool $isGetToken
      * @return bool|string
+     * @throws ModelNotCompatibleWithJWTSubjectException
      */
     public function attempt(array $credentials, bool $isGetToken = true): bool|array
     {

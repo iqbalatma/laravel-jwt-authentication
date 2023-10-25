@@ -2,13 +2,13 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use App\Models\User;
-use Carbon\Carbon;
+use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 
 class JWTService
 {
@@ -17,6 +17,7 @@ class JWTService
     private int $accessTokenTTL;
     private int $refreshTTL;
     private array $payload;
+    private array $requestedPayload;
 
     public function __construct()
     {
@@ -42,12 +43,14 @@ class JWTService
     }
 
     /**
-     * Use to generate jwt from payload
      * @param Authenticatable $authenticatable
      * @return string
+     * @throws ModelNotCompatibleWithJWTSubjectException
      */
     public function generateAccessToken(Authenticatable $authenticatable): string
     {
+        $this->checkAuthenticatableContracts($authenticatable);
+
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->accessTokenTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
@@ -56,8 +59,16 @@ class JWTService
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
+
+    /**
+     * @param Authenticatable $authenticatable
+     * @return string
+     * @throws ModelNotCompatibleWithJWTSubjectException
+     */
     public function generateRefreshToken(Authenticatable $authenticatable): string
     {
+        $this->checkAuthenticatableContracts($authenticatable);
+
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->refreshTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
@@ -67,4 +78,44 @@ class JWTService
     }
 
 
+    /**
+     * @param Authenticatable $authenticatable
+     * @return void
+     * @throws ModelNotCompatibleWithJWTSubjectException
+     */
+    private function checkAuthenticatableContracts(Authenticatable $authenticatable): void
+    {
+        if (!$authenticatable instanceof JWTSubject) {
+            throw new ModelNotCompatibleWithJWTSubjectException();
+        }
+    }
+
+
+    /**
+     * @param string $token
+     * @return array
+     */
+    public function decodeJWT(string $token):array
+    {
+        $this->requestedPayload = (array) JWT::decode($token, new Key($this->secretKey, $this->algo));
+        return $this->requestedPayload;
+    }
+
+
+    /**
+     * @param string|null $key
+     * @return string|array
+     * @throws Exception
+     */
+    public function getRequestedPayload(null|string $key = null):string|array
+    {
+        if ($key){
+            if (isset($this->requestedPayload[$key])){
+                return $this->requestedPayload[$key];
+            }else{
+                throw new Exception("Undefined array key $key");
+            }
+        }
+        return $this->requestedPayload;
+    }
 }
