@@ -14,9 +14,9 @@ class Authenticate extends BaseAuthenticateMiddleware
      *
      * @param Closure(Request): (Response) $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $tokenType = "access"): Response
     {
-        $this->authenticate();
+        $this->authenticate($tokenType);
         return $next($request);
     }
 }

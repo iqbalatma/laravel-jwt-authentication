@@ -3,9 +3,11 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,11 +28,37 @@ class BaseAuthenticateMiddleware
         //login via id
     }
 
-    protected function authenticate()
+
+    /**
+     * @param string $tokenType
+     * @return void
+     * @throws InvalidTokenTypeException
+     */
+    protected function authenticate(string $tokenType): void
     {
-        ddapi($this->jwtService->getRequestedPayload());
+        $this->checkTokenType($tokenType);
     }
 
+    /**
+     * @param string $tokenType
+     * @return void
+     * @throws InvalidTokenTypeException
+     * @throws Exception
+     */
+    private function checkTokenType(string $tokenType): void
+    {
+        if (strtolower($tokenType) !== "access" && strtolower($tokenType) !== "refresh") {
+            throw new InvalidTokenTypeException();
+        }
+
+
+        /**
+         * check condition when requested token type is different with middleware token type
+         */
+        if (($requestedTokenType = $this->jwtService->getRequestedTokenPayloads("type")) !== $tokenType) {
+            throw new InvalidTokenTypeException("This protected resource need token type $tokenType, but you provide $requestedTokenType");
+        }
+    }
 
     /**
      * @return self
@@ -47,17 +75,15 @@ class BaseAuthenticateMiddleware
 
 
     /**
-     * @return self
+     * @return void
      * @throws InvalidTokenException
      */
-    private function checkIsTokenValid():self
+    private function checkIsTokenValid(): void
     {
         try {
             $this->jwtService->decodeJWT($this->token);
-        }catch (\Exception $e){
+        } catch (Exception $e) {
             throw new InvalidTokenException();
         }
-
-        return $this;
     }
 }

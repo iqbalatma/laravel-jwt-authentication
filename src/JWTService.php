@@ -9,6 +9,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use stdClass;
 
 class JWTService
 {
@@ -17,7 +18,8 @@ class JWTService
     private int $accessTokenTTL;
     private int $refreshTTL;
     private array $payload;
-    private array $requestedPayload;
+    private array $requestTokenPayloads;
+    private stdClass $requestTokenHeaders;
 
     public function __construct()
     {
@@ -97,8 +99,8 @@ class JWTService
      */
     public function decodeJWT(string $token):array
     {
-        $this->requestedPayload = (array) JWT::decode($token, new Key($this->secretKey, $this->algo));
-        return $this->requestedPayload;
+        $this->requestTokenPayloads = (array) JWT::decode($token, new Key($this->secretKey, $this->algo, $this->requestTokenHeaders = new stdClass()));
+        return $this->requestTokenPayloads;
     }
 
 
@@ -107,15 +109,20 @@ class JWTService
      * @return string|array
      * @throws Exception
      */
-    public function getRequestedPayload(null|string $key = null):string|array
+    public function getRequestedTokenPayloads(null|string $key = null):string|array
     {
         if ($key){
-            if (isset($this->requestedPayload[$key])){
-                return $this->requestedPayload[$key];
+            if (isset($this->requestTokenPayloads[$key])){
+                return $this->requestTokenPayloads[$key];
             }else{
                 throw new Exception("Undefined array key $key");
             }
         }
-        return $this->requestedPayload;
+        return $this->requestTokenPayloads;
+    }
+
+    public function getRequestTokenHeaders()
+    {
+
     }
 }
