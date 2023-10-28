@@ -23,8 +23,10 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
 
         $this->loadMigrationsFrom(__DIR__.'/Migrations/2023_10_28_183234_issued_tokens_table.php');
         $this->publishes([
-            __DIR__.'/Migrations/2023_10_28_183234_issued_tokens_table.php' => database_path('migrations')
+            __DIR__.'/Migrations/2023_10_28_183234_issued_tokens_table.php' => database_path('migrations/2023_10_28_183234_issued_tokens_table.php')
         ], 'migrations');
+
+
 
         $this->app->singleton(JWTService::class, function () {
             return new JWTService();
@@ -53,5 +55,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTGuard($jwtService, $userProvider, $app["events"]);
         });
         Route::aliasMiddleware("auth.jwt", Authenticate::class);
+
+
     }
 }

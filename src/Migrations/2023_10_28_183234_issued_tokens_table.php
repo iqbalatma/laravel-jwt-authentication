@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string("jti");
             $table->enum("token_type", TokenType::values());
             $table->string("user_agent");
+            $table->timestamp("expired_at");
             $table->timestamps();
             $table->index(["subject_id", "jti", "token_type", "user_agent"]);
         });

@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 
 class CacheJWTBlacklistService implements JWTBlacklistService
@@ -21,11 +22,15 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function __construct(public JWTService $jwtService)
     {
+        if (!request()->userAgent()){
+            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+        }
+        $this->userAgent = request()->userAgent();
+
         $this->jti = $this->jwtService->getRequestedTokenPayloads("jti");
         $this->subjectId = $this->jwtService->getRequestedTokenPayloads("sub");
         $this->iat = $this->jwtService->getRequestedTokenPayloads("iat");
         $this->tokenType = $this->jwtService->getRequestedTokenPayloads("type");
-        $this->userAgent = request()->header("user-agent");
     }
 
     /**

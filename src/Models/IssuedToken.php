@@ -15,6 +15,7 @@ use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
  * @property string jti
  * @property string token_type
  * @property string user_agent
+ * @property Carbon expired_at
  * @property Carbon created_at
  * @property Carbon updated_at
  */
@@ -22,6 +23,6 @@ class IssuedToken extends Model
 {
     use HasFactory, HasUuids;
     protected $fillable = [
-        "subject_id", "jti", "token_type", "user_agent"
+        "subject_id", "jti", "token_type", "user_agent", "expired_at"
     ];
 }

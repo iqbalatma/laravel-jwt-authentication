@@ -2,7 +2,8 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use Exception;
+use App\Enums\TokenType;
+use Carbon\Carbon;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Models\IssuedToken;
 use RuntimeException;
 use stdClass;
 
@@ -29,8 +31,6 @@ class JWTService
         $this->algo = config("jwt_iqbal.algo");
         $this->accessTokenTTL = config("jwt_iqbal.access_token_ttl");
         $this->refreshTTL = config("jwt_iqbal.refresh_token_ttl");
-
-        $this->setDefaultPayload();
     }
 
     private function setDefaultPayload(): void
@@ -56,13 +56,22 @@ class JWTService
      */
     public function generateAccessToken(Authenticatable $authenticatable): string
     {
-        $this->checkAuthenticatableContracts($authenticatable);
+        $this->checkAuthenticatableContracts($authenticatable)
+            ->setDefaultPayload();
 
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->accessTokenTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => "access",
+            "type" => TokenType::ACCESS->value,
         ], $authenticatable->getJWTCustomClaims());
+
+        IssuedToken::create([
+            "jti" => $this->payload["jti"],
+            "token_type" => TokenType::ACCESS->value,
+            "user_agent" => request()->userAgent(),
+            "subject_id" => $authenticatable->getAuthIdentifier(),
+            "expired_at" => Carbon::createFromTimestamp($this->payload["exp"] + $this->accessTokenTTL)
+        ]);
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
@@ -74,27 +83,38 @@ class JWTService
      */
     public function generateRefreshToken(Authenticatable $authenticatable): string
     {
-        $this->checkAuthenticatableContracts($authenticatable);
+        $this->checkAuthenticatableContracts($authenticatable)
+            ->setDefaultPayload();
 
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->refreshTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => "refresh",
+            "type" => TokenType::REFRESH->value,
         ], $authenticatable->getJWTCustomClaims());
+
+        IssuedToken::create([
+            "jti" => $this->payload["jti"],
+            "token_type" => TokenType::REFRESH->value,
+            "user_agent" => request()->userAgent(),
+            "subject_id" => $authenticatable->getAuthIdentifier(),
+            "expired_at" => Carbon::createFromTimestamp($this->payload["exp"] + $this->accessTokenTTL)
+        ]);
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
 
     /**
      * @param Authenticatable $authenticatable
-     * @return void
+     * @return JWTService
      * @throws ModelNotCompatibleWithJWTSubjectException
      */
-    private function checkAuthenticatableContracts(Authenticatable $authenticatable): void
+    private function checkAuthenticatableContracts(Authenticatable $authenticatable): self
     {
         if (!$authenticatable instanceof JWTSubject) {
             throw new ModelNotCompatibleWithJWTSubjectException();
         }
+
+        return $this;
     }
 
 
