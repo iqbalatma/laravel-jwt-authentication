@@ -29,9 +29,6 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             $jwtService = $app->make(JWTService::class);
             return new CacheJWTBlacklistService($jwtService);
         });
-
-
-
     }
 
     /**

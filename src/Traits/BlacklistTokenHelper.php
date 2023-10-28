@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\CacheJWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\IssuedTokenService;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
 
 trait BlacklistTokenHelper
@@ -16,7 +17,7 @@ trait BlacklistTokenHelper
 
     /**
      * @param string|int $subjectId
-     * @return JWTService|CacheJWTBlacklistService|BlacklistTokenHelper
+     * @return JWTService|CacheJWTBlacklistService|IssuedTokenService|BlacklistTokenHelper
      */
     protected function setSubjectCacheRecord(string|int $subjectId): self
     {

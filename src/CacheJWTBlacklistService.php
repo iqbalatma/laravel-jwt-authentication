@@ -46,6 +46,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
     {
         $cachePrefix = self::$jwtKeyPrefix;
 
+
         /**
          * this is condition when redis got incident, and latest incident date time is updated and reset
          * so when token is below incident date time, it's mean there is possibility that token already on blacklist
