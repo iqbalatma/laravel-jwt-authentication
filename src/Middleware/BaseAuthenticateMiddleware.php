@@ -33,8 +33,10 @@ class BaseAuthenticateMiddleware
 
     private function checkIncidentTime():self
     {
-        if (!$this->incidentTime = Cache::get(self::INCIDENT_DATE_TIME_PREFIX)) {
-            $this->incidentTime = Cache::forever(self::INCIDENT_DATE_TIME_PREFIX, time());
+        if (!($this->incidentTime = Cache::get(self::INCIDENT_DATE_TIME_PREFIX))) {
+            $now = time();
+            Cache::forever(self::INCIDENT_DATE_TIME_PREFIX, $now);
+            $this->incidentTime = $now;
         }
         return $this;
     }

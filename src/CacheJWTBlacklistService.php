@@ -36,8 +36,14 @@ class CacheJWTBlacklistService implements JWTBlacklistService
     {
         $cachePrefix = self::JWT_KEY_PREFIX;
 
+        /**
+         * this is condition when redis got incident, and latest incident date time is updated and reset
+         * so when token is below incident date time, it's mean there is possibility that token already on blacklist
+         * but since redis got incident and deleted, it will be considered as valid token
+         * so, we need to check if incident time is greater or equal than iat
+         */
         if ($incidentTime >= $this->iat) {
-            $this->blacklistToken();
+            $this->blacklistToken(true);
             return true;
         }
         /**
