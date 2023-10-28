@@ -6,6 +6,7 @@ use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
@@ -17,17 +18,26 @@ use Symfony\Component\HttpFoundation\Response;
 class BaseAuthenticateMiddleware
 {
     protected string $token;
+    protected int|null $incidentTime;
+    protected const INCIDENT_DATE_TIME_PREFIX = "jwt.latest_incident_date_time";
 
     /**
      * @throws MissingRequiredTokenException|InvalidTokenException
      */
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
-        $this->setToken()
+        $this->checkIncidentTime()
+            ->setToken()
             ->checkIsTokenValid();
-        //login via id
     }
 
+    private function checkIncidentTime():self
+    {
+        if (!$this->incidentTime = Cache::get(self::INCIDENT_DATE_TIME_PREFIX)) {
+            $this->incidentTime = Cache::forever(self::INCIDENT_DATE_TIME_PREFIX, time());
+        }
+        return $this;
+    }
 
     /**
      * @param string $tokenType
@@ -68,7 +78,7 @@ class BaseAuthenticateMiddleware
      */
     private function checkTokenBlacklist(): void
     {
-        if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
+        if (resolve(JWTBlacklistService::class)->isTokenBlacklisted($this->incidentTime)) {
             throw new InvalidTokenException();
         }
     }
