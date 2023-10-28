@@ -1,0 +1,14 @@
+<?php
+
+namespace Iqbalatma\LaravelJwtAuthentication\Exceptions;
+
+use Exception;
+use Throwable;
+
+class EntityDoesNotExistsException extends Exception
+{
+    public function __construct(string $message = "Entity does not exists", int $code = 0, ?Throwable $previous = null)
+    {
+        parent::__construct($message, $code, $previous);
+    }
+}
