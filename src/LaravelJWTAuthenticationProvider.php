@@ -6,6 +6,7 @@ use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
 
 class LaravelJWTAuthenticationProvider extends ServiceProvider
@@ -22,6 +23,12 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
 
         $this->app->singleton(JWTService::class, function () {
             return new JWTService();
+        });
+
+        $this->app->bind(JWTBlacklistService::class, function (Application $app){
+            $jwtService = $app->make(JWTService::class);
+            return new CacheJWTBlacklistService($jwtService);
+
         });
 
         Route::aliasMiddleware("auth.jwt", Authenticate::class);

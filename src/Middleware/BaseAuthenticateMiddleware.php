@@ -6,9 +6,11 @@ use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -23,8 +25,6 @@ class BaseAuthenticateMiddleware
     {
         $this->setToken()
             ->checkIsTokenValid();
-        //check is token access type
-        //check is token blacklisted
         //login via id
     }
 
@@ -33,30 +33,43 @@ class BaseAuthenticateMiddleware
      * @param string $tokenType
      * @return void
      * @throws InvalidTokenTypeException
+     * @throws InvalidTokenException
      */
     protected function authenticate(string $tokenType): void
     {
-        $this->checkTokenType($tokenType);
+        $this->checkTokenType($tokenType)
+            ->checkTokenBlacklist();
     }
 
     /**
      * @param string $tokenType
-     * @return void
+     * @return BaseAuthenticateMiddleware
      * @throws InvalidTokenTypeException
      * @throws Exception
      */
-    private function checkTokenType(string $tokenType): void
+    private function checkTokenType(string $tokenType): self
     {
-        if (strtolower($tokenType) !== "access" && strtolower($tokenType) !== "refresh") {
+        if (strtolower($tokenType) !== TokenType::ACCESS->value && strtolower($tokenType) !== TokenType::REFRESH->value) {
             throw new InvalidTokenTypeException();
         }
-
 
         /**
          * check condition when requested token type is different with middleware token type
          */
         if (($requestedTokenType = $this->jwtService->getRequestedTokenPayloads("type")) !== $tokenType) {
             throw new InvalidTokenTypeException("This protected resource need token type $tokenType, but you provide $requestedTokenType");
+        }
+
+        return $this;
+    }
+
+    /**
+     * @throws InvalidTokenException
+     */
+    private function checkTokenBlacklist(): void
+    {
+        if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
+            throw new InvalidTokenException();
         }
     }
 
