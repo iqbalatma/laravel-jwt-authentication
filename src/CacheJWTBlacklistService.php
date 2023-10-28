@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Models\IssuedToken;
 
 class CacheJWTBlacklistService implements JWTBlacklistService
 {
@@ -22,7 +23,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function __construct(public JWTService $jwtService)
     {
-        if (!request()->userAgent()){
+        if (!request()->userAgent()) {
             throw new MissingRequiredHeaderException("Missing required header User-Agent");
         }
         $this->userAgent = request()->userAgent();
@@ -73,16 +74,24 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         $accessTokenTTL = config("jwt_iqbal.access_token_ttl");
         $refreshTokenTTL = config("jwt_iqbal.refresh_token_ttl");
 
-        if ($isBlacklistBothToken){
-            Cache::put("$cachePrefix.".TokenType::REFRESH->value.".$this->subjectId.$this->userAgent", $this->iat, $refreshTokenTTL);
-            Cache::put("$cachePrefix.".TokenType::ACCESS->value.".$this->subjectId.$this->userAgent", $this->iat, $accessTokenTTL);
-        }else{
-            if ($this->tokenType === TokenType::REFRESH->value){
+        if ($isBlacklistBothToken) {
+            Cache::put("$cachePrefix." . TokenType::REFRESH->value . ".$this->subjectId.$this->userAgent", $this->iat, $refreshTokenTTL);
+            Cache::put("$cachePrefix." . TokenType::ACCESS->value . ".$this->subjectId.$this->userAgent", $this->iat, $accessTokenTTL);
+
+            IssuedToken::where("subject_id", $this->subjectId)
+                ->where("user_agent", $this->userAgent)
+                ->delete();
+        } else {
+            if ($this->tokenType === TokenType::REFRESH->value) {
                 $ttl = $refreshTokenTTL;
-            }else{
+            } else {
                 $ttl = $accessTokenTTL;
             }
             Cache::put("$cachePrefix.$this->tokenType.$this->subjectId.$this->userAgent", $this->iat, $ttl);
+            IssuedToken::where("token_type", $this->tokenType)
+                ->where("subject_id", $this->subjectId)
+                ->where("user_agent", $this->userAgent)
+                ->delete();
         }
     }
 }
