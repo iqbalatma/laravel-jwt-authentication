@@ -4,6 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Abstracts;
 
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
@@ -46,7 +47,21 @@ abstract class BaseAuthenticateMiddleware
     protected function authenticate(string $tokenType): void
     {
         $this->checkTokenType($tokenType)
-            ->checkTokenBlacklist();
+            ->checkTokenBlacklist()
+            ->setAuthenticatedUser();
+    }
+
+    /**
+     * @return void
+     * @throws InvalidTokenException
+     */
+    private function setAuthenticatedUser(): void
+    {
+        $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedTokenPayloads("sub"));
+        if (!$user){
+            throw new InvalidTokenException("User of this token does not exists");
+        }
+        Auth::setUser($user);
     }
 
     /**
@@ -71,14 +86,18 @@ abstract class BaseAuthenticateMiddleware
         return $this;
     }
 
+
     /**
+     * @return self
      * @throws InvalidTokenException
      */
-    private function checkTokenBlacklist(): void
+    private function checkTokenBlacklist(): self
     {
         if (resolve(JWTBlacklistService::class)->isTokenBlacklisted($this->incidentTime)) {
             throw new InvalidTokenException();
         }
+
+        return $this;
     }
 
     /**

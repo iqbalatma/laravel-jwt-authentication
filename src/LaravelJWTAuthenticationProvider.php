@@ -55,7 +55,5 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTGuard($jwtService, $userProvider, $app["events"]);
         });
         Route::aliasMiddleware("auth.jwt", Authenticate::class);
-
-
     }
 }

@@ -2,10 +2,7 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use App\Models\Auth\User;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Events\Dispatcher;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 
@@ -14,14 +11,6 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubje
  */
 class JWTGuard extends BaseJWTGuard
 {
-
-    public function __construct(JWTService $jwtService, UserProvider $provider, Dispatcher $events)
-    {
-        $this->jwtService = $jwtService;
-        $this->provider = $provider;
-        $this->events = $events;
-    }
-
     /**
      * @return Authenticatable|null
      */
@@ -39,10 +28,6 @@ class JWTGuard extends BaseJWTGuard
         $user = $this->provider->retrieveByCredentials($credentials);
 
         return $this->hasValidCredentials($user, $credentials);
-    }
-
-    public function setIqbal(){
-        $this->user = User::first();
     }
 
 
@@ -79,18 +64,18 @@ class JWTGuard extends BaseJWTGuard
     }
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getAccessToken(): string
+    public function getAccessToken(): string|null
     {
         return $this->accessToken;
     }
 
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getRefreshToken(): string
+    public function getRefreshToken(): string|null
     {
         return $this->refreshToken;
     }
