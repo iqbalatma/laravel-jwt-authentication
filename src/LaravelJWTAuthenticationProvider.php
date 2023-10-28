@@ -21,12 +21,6 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         ], "config");
         $this->mergeConfigFrom(__DIR__ . '/Config/jwt_iqbal.php', 'jwt_iqbal');
 
-        $this->loadMigrationsFrom(__DIR__.'/Migrations/2023_10_28_183234_issued_tokens_table.php');
-        $this->publishes([
-            __DIR__.'/Migrations/2023_10_28_183234_issued_tokens_table.php' => database_path('migrations/2023_10_28_183234_issued_tokens_table.php')
-        ], 'migrations');
-
-
         $this->app->singleton(JWTService::class, function () {
             return new JWTService();
         });
