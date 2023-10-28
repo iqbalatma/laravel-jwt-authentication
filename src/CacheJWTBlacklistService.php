@@ -3,20 +3,23 @@
 namespace Iqbalatma\LaravelJwtAuthentication;
 
 use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
-use Iqbalatma\LaravelJwtAuthentication\Models\IssuedToken;
+use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 
 class CacheJWTBlacklistService implements JWTBlacklistService
 {
+    use BlacklistTokenHelper;
+
     public string $jti;
     public string $iat;
+    public string $exp;
     public string $tokenType;
-    public string|int $subjectId;
+    public string|int $requestSubjectId;
     public string $userAgent;
-    public const JWT_KEY_PREFIX = "jwt";
 
     /**
      * @throws Exception
@@ -29,7 +32,8 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         $this->userAgent = request()->userAgent();
 
         $this->jti = $this->jwtService->getRequestedTokenPayloads("jti");
-        $this->subjectId = $this->jwtService->getRequestedTokenPayloads("sub");
+        $this->exp = $this->jwtService->getRequestedTokenPayloads("exp");
+        $this->requestSubjectId = $this->jwtService->getRequestedTokenPayloads("sub");
         $this->iat = $this->jwtService->getRequestedTokenPayloads("iat");
         $this->tokenType = $this->jwtService->getRequestedTokenPayloads("type");
     }
@@ -40,7 +44,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function isTokenBlacklisted(int $incidentTime): bool
     {
-        $cachePrefix = self::JWT_KEY_PREFIX;
+        $cachePrefix = self::$jwtKeyPrefix;
 
         /**
          * this is condition when redis got incident, and latest incident date time is updated and reset
@@ -52,11 +56,27 @@ class CacheJWTBlacklistService implements JWTBlacklistService
             $this->blacklistToken(true);
             return true;
         }
+
         /**
-         * is token is blacklisted and blacklisted token iat is greater than requested iat, it's mean requested iat is invalid
+         * this is the condition when cache record for this subject is not set,
+         * so the token must be not blacklisted yet
+         * @var $issuedTokenBySubject Collection
          */
-        if ($blacklistedIag = Cache::get("$cachePrefix.$this->tokenType.$this->subjectId.$this->userAgent")) {
-            return $blacklistedIag >= $this->iat;
+        if (!($issuedTokenBySubject = Cache::get("$cachePrefix.$this->requestSubjectId"))) {
+            Cache::forever("$cachePrefix.$this->requestSubjectId", collect([]));
+            return false;
+        }
+
+        /**
+         * when user agent, type, and iat greater than current iat exists,
+         * it's mean current iat is no longer valid
+         * because the valid token is when iat greater than blacklisted iat
+         */
+        if ($issuedTokenBySubject->where("user_agent", $this->userAgent)
+            ->where('type', $this->tokenType)
+            ->where('iat', ">=", $this->iat)
+            ->first()) {
+            return true;
         }
 
         return false;
@@ -69,29 +89,13 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function blacklistToken(bool $isBlacklistBothToken = false): void
     {
-        $cachePrefix = self::JWT_KEY_PREFIX;
-
-        $accessTokenTTL = config("jwt_iqbal.access_token_ttl");
-        $refreshTokenTTL = config("jwt_iqbal.refresh_token_ttl");
+        $this->setSubjectCacheRecord($this->requestSubjectId);
 
         if ($isBlacklistBothToken) {
-            Cache::put("$cachePrefix." . TokenType::REFRESH->value . ".$this->subjectId.$this->userAgent", $this->iat, $refreshTokenTTL);
-            Cache::put("$cachePrefix." . TokenType::ACCESS->value . ".$this->subjectId.$this->userAgent", $this->iat, $accessTokenTTL);
-
-            IssuedToken::where("subject_id", $this->subjectId)
-                ->where("user_agent", $this->userAgent)
-                ->delete();
+            $this->executeBlacklistToken(TokenType::REFRESH->value, $this->userAgent);
+            $this->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent);
         } else {
-            if ($this->tokenType === TokenType::REFRESH->value) {
-                $ttl = $refreshTokenTTL;
-            } else {
-                $ttl = $accessTokenTTL;
-            }
-            Cache::put("$cachePrefix.$this->tokenType.$this->subjectId.$this->userAgent", $this->iat, $ttl);
-            IssuedToken::where("token_type", $this->tokenType)
-                ->where("subject_id", $this->subjectId)
-                ->where("user_agent", $this->userAgent)
-                ->delete();
+            $this->executeBlacklistToken($this->tokenType, $this->userAgent);
         }
     }
 }

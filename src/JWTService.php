@@ -10,13 +10,17 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Models\IssuedToken;
+use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 use RuntimeException;
 use stdClass;
 
 class JWTService
 {
+    use BlacklistTokenHelper;
+
     private string $secretKey;
     private string $algo;
     private int $accessTokenTTL;
@@ -37,7 +41,7 @@ class JWTService
     {
         $now = time();
         if (!Cache::get(config("jwt_iqbal.latest_incident_time_key"))) {
-            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now-1);
+            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now - 1);
         }
         $this->payload = [
             'iss' => url()->current(),
@@ -59,19 +63,18 @@ class JWTService
         $this->checkAuthenticatableContracts($authenticatable)
             ->setDefaultPayload();
 
+
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->accessTokenTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
             "type" => TokenType::ACCESS->value,
         ], $authenticatable->getJWTCustomClaims());
 
-        IssuedToken::create([
-            "jti" => $this->payload["jti"],
-            "token_type" => TokenType::ACCESS->value,
-            "user_agent" => request()->userAgent(),
-            "subject_id" => $authenticatable->getAuthIdentifier(),
-            "expired_at" => Carbon::createFromTimestamp($this->payload["exp"] + $this->accessTokenTTL)
-        ]);
+        $blacklistIat = $this->payload["iat"] - 1;
+
+        $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
+            ->executeBlacklistToken(TokenType::ACCESS->value, request()->userAgent(), $blacklistIat);
+
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
@@ -92,13 +95,11 @@ class JWTService
             "type" => TokenType::REFRESH->value,
         ], $authenticatable->getJWTCustomClaims());
 
-        IssuedToken::create([
-            "jti" => $this->payload["jti"],
-            "token_type" => TokenType::REFRESH->value,
-            "user_agent" => request()->userAgent(),
-            "subject_id" => $authenticatable->getAuthIdentifier(),
-            "expired_at" => Carbon::createFromTimestamp($this->payload["exp"] + $this->accessTokenTTL)
-        ]);
+        $blacklistIat = $this->payload["iat"] - 1;
+
+        $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
+            ->executeBlacklistToken(TokenType::REFRESH->value, request()->userAgent(), $blacklistIat);
+
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
@@ -122,10 +123,10 @@ class JWTService
      * @param string $token
      * @return array
      */
-    public function decodeJWT(string $token):array
+    public function decodeJWT(string $token): array
     {
         $headers = new stdClass();
-        $this->requestTokenPayloads = (array) JWT::decode($token, new Key($this->secretKey, $this->algo), $headers);
+        $this->requestTokenPayloads = (array)JWT::decode($token, new Key($this->secretKey, $this->algo), $headers);
 
         $this->requestTokenHeaders = $headers;
         return $this->requestTokenPayloads;
@@ -136,10 +137,10 @@ class JWTService
      * @param string|null $key
      * @return string|array
      */
-    public function getRequestedTokenPayloads(null|string $key = null):string|array
+    public function getRequestedTokenPayloads(null|string $key = null): string|array
     {
-        if ($key){
-            if (isset($this->requestTokenPayloads[$key])){
+        if ($key) {
+            if (isset($this->requestTokenPayloads[$key])) {
                 return $this->requestTokenPayloads[$key];
             }
 
@@ -153,11 +154,11 @@ class JWTService
      * @param string|null $key
      * @return string|array
      */
-    public function getRequestTokenHeaders(null|string $key = null):string|array
+    public function getRequestTokenHeaders(null|string $key = null): string|array
     {
-        $headers = (array) $this->requestTokenHeaders;
-        if ($key){
-            if (isset($headers[$key])){
+        $headers = (array)$this->requestTokenHeaders;
+        if ($key) {
+            if (isset($headers[$key])) {
                 return $headers[$key];
             }
 

@@ -27,7 +27,6 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         ], 'migrations');
 
 
-
         $this->app->singleton(JWTService::class, function () {
             return new JWTService();
         });
@@ -36,6 +35,8 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             $jwtService = $app->make(JWTService::class);
             return new CacheJWTBlacklistService($jwtService);
         });
+
+
 
     }
 
