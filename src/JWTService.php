@@ -6,6 +6,7 @@ use Exception;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
@@ -34,6 +35,9 @@ class JWTService
     private function setDefaultPayload(): void
     {
         $now = time();
+        if (!Cache::get(config("jwt_iqbal.latest_incident_time_key"))) {
+            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now-1);
+        }
         $this->payload = [
             'iss' => url()->current(),
             'iat' => $now,

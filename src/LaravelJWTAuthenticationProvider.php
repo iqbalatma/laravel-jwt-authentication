@@ -28,10 +28,8 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         $this->app->bind(JWTBlacklistService::class, function (Application $app){
             $jwtService = $app->make(JWTService::class);
             return new CacheJWTBlacklistService($jwtService);
-
         });
 
-        Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }
 
     /**
@@ -49,5 +47,6 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             $userProvider = Auth::createUserProvider($config["provider"]);
             return new JWTGuard($jwtService, $userProvider, $app["events"]);
         });
+        Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }
 }

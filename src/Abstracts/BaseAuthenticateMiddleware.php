@@ -1,11 +1,9 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
+namespace Iqbalatma\LaravelJwtAuthentication\Abstracts;
 
-use Closure;
 use Exception;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
@@ -13,13 +11,11 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
-use Symfony\Component\HttpFoundation\Response;
 
-class BaseAuthenticateMiddleware
+abstract class BaseAuthenticateMiddleware
 {
     protected string $token;
     protected int|null $incidentTime;
-    protected const INCIDENT_DATE_TIME_PREFIX = "jwt.latest_incident_date_time";
 
     /**
      * @throws MissingRequiredTokenException|InvalidTokenException
@@ -31,11 +27,11 @@ class BaseAuthenticateMiddleware
             ->checkIsTokenValid();
     }
 
-    private function checkIncidentTime():self
+    private function checkIncidentTime(): self
     {
-        if (!($this->incidentTime = Cache::get(self::INCIDENT_DATE_TIME_PREFIX))) {
+        if (!($this->incidentTime = Cache::get(config("jwt_iqbal.latest_incident_time_key")))) {
             $now = time();
-            Cache::forever(self::INCIDENT_DATE_TIME_PREFIX, $now);
+            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now);
             $this->incidentTime = $now;
         }
         return $this;

@@ -4,7 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseAuthenticateMiddleware;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Symfony\Component\HttpFoundation\Response;
 
