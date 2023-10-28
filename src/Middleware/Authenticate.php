@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseAuthenticateMiddleware;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -15,6 +16,7 @@ class Authenticate extends BaseAuthenticateMiddleware
      *
      * @param Closure(Request): (Response) $next
      * @throws InvalidTokenTypeException
+     * @throws InvalidTokenException
      */
     public function handle(Request $request, Closure $next, string $tokenType = "access"): Response
     {
