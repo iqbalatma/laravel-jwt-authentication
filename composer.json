@@ -12,6 +12,7 @@
         }
     ],
     "require": {
-        "firebase/php-jwt": "^6.9"
+        "firebase/php-jwt": "^6.9",
+        "archtechx/enums" :  "^0.3.2"
     }
 }
