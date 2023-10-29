@@ -3,8 +3,10 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\CacheJWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\IssuedTokenService;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
 
@@ -13,16 +15,21 @@ trait BlacklistTokenHelper
     protected static string $jwtKeyPrefix = "jwt";
 
     protected Collection|null $issuedTokenBySubject;
-    protected int|string $subjectId;
+    protected int|string|null $subjectId;
 
     /**
-     * @param string|int $subjectId
+     * @param string|int|null $subjectId
      * @return JWTService|CacheJWTBlacklistService|IssuedTokenService|BlacklistTokenHelper
+     * @throws InvalidActionException
      */
-    protected function setSubjectCacheRecord(string|int $subjectId): self
+    protected function setSubjectCacheRecord(string|int|null $subjectId = null): self
     {
-        $this->issuedTokenBySubject = Cache::get(self::$jwtKeyPrefix . ".$subjectId") ?? collect();
-        $this->subjectId = $subjectId;
+        $this->subjectId = $subjectId ?: Auth::id();
+        if (!$this->subjectId) {
+            throw new InvalidActionException("Subject id cannot be null");
+        }
+
+        $this->issuedTokenBySubject = Cache::get(self::$jwtKeyPrefix . ".$this->subjectId") ?? collect();
 
         return $this;
     }
@@ -49,9 +56,9 @@ trait BlacklistTokenHelper
      * @param string $tokenType
      * @param string $userAgent
      * @param int|null $iat
-     * @return void
+     * @return JWTService|CacheJWTBlacklistService|IssuedTokenService|BlacklistTokenHelper
      */
-    protected function updateExistingBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent, null|int $iat = null): void
+    protected function updateExistingBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent, null|int $iat = null): self
     {
         if (!$iat) {
             $iat = time();
@@ -62,6 +69,8 @@ trait BlacklistTokenHelper
             }
             return $item;
         });
+
+        return $this;
     }
 
 
@@ -85,12 +94,11 @@ trait BlacklistTokenHelper
 
 
     /**
-     * @param int|string $subjectId
      * @return void
      */
-    protected function updateSubjectCacheRecord(int|string $subjectId): void
+    protected function updateSubjectCacheRecord(): void
     {
-        Cache::forever(self::$jwtKeyPrefix . ".$subjectId", $this->issuedTokenBySubject);
+        Cache::forever(self::$jwtKeyPrefix . ".$this->subjectId", $this->issuedTokenBySubject);
     }
 
 
@@ -110,6 +118,6 @@ trait BlacklistTokenHelper
             $this->updateExistingBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent, $iat) :
             $this->pushNewBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent, $iat);
 
-        $this->updateSubjectCacheRecord($this->subjectId);
+        $this->updateSubjectCacheRecord();
     }
 }

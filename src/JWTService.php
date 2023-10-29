@@ -9,6 +9,7 @@ use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
@@ -17,7 +18,7 @@ use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 use RuntimeException;
 use stdClass;
 
-class JWTService
+class JWTService extends BaseJWTService
 {
     use BlacklistTokenHelper;
 

@@ -18,7 +18,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
     public string $iat;
     public string $exp;
     public string $tokenType;
-    public string|int $requestSubjectId;
+    public string|int $sub;
     public string $userAgent;
 
     /**
@@ -33,7 +33,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
 
         $this->jti = $this->jwtService->getRequestedTokenPayloads("jti");
         $this->exp = $this->jwtService->getRequestedTokenPayloads("exp");
-        $this->requestSubjectId = $this->jwtService->getRequestedTokenPayloads("sub");
+        $this->sub = $this->jwtService->getRequestedTokenPayloads("sub");
         $this->iat = $this->jwtService->getRequestedTokenPayloads("iat");
         $this->tokenType = $this->jwtService->getRequestedTokenPayloads("type");
     }
@@ -63,8 +63,8 @@ class CacheJWTBlacklistService implements JWTBlacklistService
          * so the token must be not blacklisted yet
          * @var $issuedTokenBySubject Collection
          */
-        if (!($issuedTokenBySubject = Cache::get("$cachePrefix.$this->requestSubjectId"))) {
-            Cache::forever("$cachePrefix.$this->requestSubjectId", collect([]));
+        if (!($issuedTokenBySubject = Cache::get("$cachePrefix.$this->sub"))) {
+            Cache::forever("$cachePrefix.$this->sub", collect([]));
             return false;
         }
 
@@ -91,7 +91,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {
-        $this->setSubjectCacheRecord($this->requestSubjectId);
+        $this->setSubjectCacheRecord($this->sub);
 
         if ($isBlacklistBothToken) {
             $this->executeBlacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent);
