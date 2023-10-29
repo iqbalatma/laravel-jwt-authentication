@@ -3,6 +3,7 @@
 namespace Iqbalatma\LaravelJwtAuthentication;
 
 use Illuminate\Contracts\Foundation\Application;
+use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -25,7 +26,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTService();
         });
 
-        $this->app->bind(JWTBlacklistService::class, function (Application $app){
+        $this->app->bind(JWTBlacklistService::class, function (Application $app) {
             $jwtService = $app->make(JWTService::class);
             return new CacheJWTBlacklistService($jwtService);
         });
@@ -41,10 +42,10 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
          * name is guard name
          * config contain driver-name and provider
          */
-        Auth::extend("jwt-iqbal", function (Application $app, string $name, array $config) {
+        Auth::extend("jwt-iqbal", static function (Application $app, string $name, array $config) {
             $jwtService = $app->make(JWTService::class);
             $userProvider = Auth::createUserProvider($config["provider"]);
-            return new JWTGuard($jwtService, $userProvider, $app["events"]);
+            return new JWTGuard($jwtService, $userProvider, $app[Dispatcher::class]);
         });
         Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }

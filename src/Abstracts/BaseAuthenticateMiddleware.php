@@ -10,6 +10,7 @@ use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidIssuedUserAgent;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
@@ -17,21 +18,31 @@ use Iqbalatma\LaravelJwtAuthentication\JWTService;
 abstract class BaseAuthenticateMiddleware
 {
     protected string $token;
+    protected string|null $userAgent;
     protected int|null $incidentTime;
 
     /**
      * @throws MissingRequiredTokenException|InvalidTokenException
-     * @throws InvalidIssuedUserAgent
+     * @throws InvalidIssuedUserAgent|MissingRequiredHeaderException
      */
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
+        $this->userAgent = $this->request->userAgent();
+        if (!$this->userAgent) {
+            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+        }
+
         $this->checkIncidentTime()
             ->setToken()
             ->checkIsTokenValid()
             ->checkUserAgent();
     }
 
-    private function checkIncidentTime(): self
+
+    /**
+     * @return self
+     */
+    protected function checkIncidentTime(): self
     {
         if (!($this->incidentTime = Cache::get(config("jwt_iqbal.latest_incident_time_key")))) {
             $now = time();
@@ -58,9 +69,9 @@ abstract class BaseAuthenticateMiddleware
      * @return void
      * @throws InvalidTokenException
      */
-    private function setAuthenticatedUser(): void
+    protected function setAuthenticatedUser(): void
     {
-        $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedTokenPayloads("sub"));
+        $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedSub());
         if (!$user) {
             throw new InvalidTokenException("User of this token does not exists");
         }
@@ -73,7 +84,7 @@ abstract class BaseAuthenticateMiddleware
      * @throws InvalidTokenTypeException
      * @throws Exception
      */
-    private function checkTokenType(string $tokenType): self
+    protected function checkTokenType(string $tokenType): self
     {
         if (strtolower($tokenType) !== TokenType::ACCESS->value && strtolower($tokenType) !== TokenType::REFRESH->value) {
             throw new InvalidTokenTypeException();
@@ -82,7 +93,7 @@ abstract class BaseAuthenticateMiddleware
         /**
          * check condition when requested token type is different with middleware token type
          */
-        if (($requestedTokenType = $this->jwtService->getRequestedTokenPayloads("type")) !== $tokenType) {
+        if (($requestedTokenType = $this->jwtService->getRequestedType()) !== $tokenType) {
             throw new InvalidTokenTypeException("This protected resource need token type $tokenType, but you provide $requestedTokenType");
         }
 
@@ -94,7 +105,7 @@ abstract class BaseAuthenticateMiddleware
      * @return self
      * @throws InvalidTokenException
      */
-    private function checkTokenBlacklist(): self
+    protected function checkTokenBlacklist(): self
     {
         if (resolve(JWTBlacklistService::class)->isTokenBlacklisted($this->incidentTime)) {
             throw new InvalidTokenException();
@@ -107,7 +118,7 @@ abstract class BaseAuthenticateMiddleware
      * @return self
      * @throws MissingRequiredTokenException
      */
-    private function setToken(): self
+    protected function setToken(): self
     {
         if (!$this->request->hasHeader("authorization")) {
             throw new MissingRequiredTokenException();
@@ -121,10 +132,10 @@ abstract class BaseAuthenticateMiddleware
      * @return void
      * @throws InvalidIssuedUserAgent
      */
-    private function checkUserAgent(): void
+    protected function checkUserAgent(): void
     {
-        if ($this->jwtService->getRequestedTokenPayloads("iua") !== request()->userAgent()) {
-            resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $this->jwtService->getRequestedTokenPayloads("iua"));
+        if (($iua = $this->jwtService->getRequestedIua()) !== $this->userAgent) {
+            resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $iua);
             throw new InvalidIssuedUserAgent();
         }
     }
@@ -134,7 +145,7 @@ abstract class BaseAuthenticateMiddleware
      * @return BaseAuthenticateMiddleware
      * @throws InvalidTokenException
      */
-    private function checkIsTokenValid(): self
+    protected function checkIsTokenValid(): self
     {
         try {
             $this->jwtService->decodeJWT($this->token);

@@ -8,8 +8,8 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\JWTGuard;
+use Illuminate\Auth\Events\Validated;
 
 /**
  * @mixin JWTGuard
@@ -23,9 +23,9 @@ trait AuthEventTrait
      */
     protected function fireValidatedEvent($user): void
     {
-        if (class_exists('Illuminate\Auth\Events\Validated')) {
+        if (class_exists(Validated::class)) {
             $this->events->dispatch(
-                new \Illuminate\Auth\Events\Validated(
+                new Validated(
                     $this->name,
                     $user
                 )

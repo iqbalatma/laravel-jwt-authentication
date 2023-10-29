@@ -80,6 +80,15 @@ abstract class BaseJWTService
         return $this->getRequestedTokenPayloads("iat");
     }
 
+
+    /**
+     * @return string
+     */
+    public function getRequestedIua(): string
+    {
+        return $this->getRequestedTokenPayloads("iua");
+    }
+
     /**
      * @return string
      */
