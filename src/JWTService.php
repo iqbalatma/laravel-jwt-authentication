@@ -10,10 +10,9 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\Models\IssuedToken;
 use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 use RuntimeException;
 use stdClass;
@@ -59,6 +58,7 @@ class JWTService extends BaseJWTService
      * @param Authenticatable $authenticatable
      * @return string
      * @throws ModelNotCompatibleWithJWTSubjectException
+     * @throws InvalidActionException
      */
     public function generateAccessToken(Authenticatable $authenticatable): string
     {
@@ -84,7 +84,7 @@ class JWTService extends BaseJWTService
     /**
      * @param Authenticatable $authenticatable
      * @return string
-     * @throws ModelNotCompatibleWithJWTSubjectException
+     * @throws ModelNotCompatibleWithJWTSubjectException|InvalidActionException
      */
     public function generateRefreshToken(Authenticatable $authenticatable): string
     {

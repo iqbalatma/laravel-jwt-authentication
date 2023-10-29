@@ -8,6 +8,7 @@ use Illuminate\Auth\Events\Failed;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\JWTGuard;
 
 /**
