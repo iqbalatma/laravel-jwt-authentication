@@ -2,7 +2,6 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use App\Enums\TokenType;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
