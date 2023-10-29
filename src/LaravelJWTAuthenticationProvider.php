@@ -7,6 +7,7 @@ use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
+use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
 
@@ -37,6 +38,11 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if ($this->app->runningInConsole()){
+            $this->commands([
+                JWTGenerateSecretCommand::class
+            ]);
+        }
         /**
          * app is container
          * name is guard name
