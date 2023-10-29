@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
 use Iqbalatma\LaravelJwtAuthentication\CacheJWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\IssuedTokenService;
@@ -19,7 +20,7 @@ trait BlacklistTokenHelper
 
     /**
      * @param string|int|null $subjectId
-     * @return JWTService|CacheJWTBlacklistService|IssuedTokenService|BlacklistTokenHelper
+     * @return BaseJWTGuard|CacheJWTBlacklistService|IssuedTokenService|JWTService|BlacklistTokenHelper
      * @throws InvalidActionException
      */
     protected function setSubjectCacheRecord(string|int|null $subjectId = null): self
@@ -56,7 +57,7 @@ trait BlacklistTokenHelper
      * @param string $tokenType
      * @param string $userAgent
      * @param int|null $iat
-     * @return JWTService|CacheJWTBlacklistService|IssuedTokenService|BlacklistTokenHelper
+     * @return BaseJWTGuard|CacheJWTBlacklistService|IssuedTokenService|JWTService|BlacklistTokenHelper
      */
     protected function updateExistingBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent, null|int $iat = null): self
     {

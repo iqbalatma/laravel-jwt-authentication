@@ -3,10 +3,7 @@
 namespace Iqbalatma\LaravelJwtAuthentication;
 
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 

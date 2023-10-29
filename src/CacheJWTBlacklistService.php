@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
@@ -14,28 +15,26 @@ class CacheJWTBlacklistService implements JWTBlacklistService
 {
     use BlacklistTokenHelper;
 
-    public string $jti;
     public string $iat;
     public string $exp;
     public string $tokenType;
     public string|int $sub;
-    public string $userAgent;
+    public string|null $userAgent;
 
     /**
      * @throws Exception
      */
     public function __construct(public JWTService $jwtService)
     {
-        if (!request()->userAgent()) {
+        $this->userAgent = request()->userAgent();
+        if (!$this->userAgent) {
             throw new MissingRequiredHeaderException("Missing required header User-Agent");
         }
-        $this->userAgent = request()->userAgent();
 
-        $this->jti = $this->jwtService->getRequestedTokenPayloads("jti");
-        $this->exp = $this->jwtService->getRequestedTokenPayloads("exp");
-        $this->sub = $this->jwtService->getRequestedTokenPayloads("sub");
-        $this->iat = $this->jwtService->getRequestedTokenPayloads("iat");
-        $this->tokenType = $this->jwtService->getRequestedTokenPayloads("type");
+        $this->exp = $this->jwtService->getRequestedExp();
+        $this->sub = $this->jwtService->getRequestedSub();
+        $this->iat = $this->jwtService->getRequestedIat();
+        $this->tokenType = $this->jwtService->getRequestedType();
     }
 
     /**
@@ -88,6 +87,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      * @param bool $isBlacklistBothToken
      * @param string|null $userAgent
      * @return void
+     * @throws InvalidActionException
      */
     public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {

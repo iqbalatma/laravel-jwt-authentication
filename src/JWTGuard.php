@@ -19,11 +19,7 @@ class JWTGuard extends BaseJWTGuard
      */
     public function user(): Authenticatable|null
     {
-        if ($this->user !== null) {
-            return $this->user;
-        }
-
-        return null;
+        return $this->user ?? null;
     }
 
     /**

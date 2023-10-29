@@ -3,62 +3,22 @@
 namespace Iqbalatma\LaravelJwtAuthentication;
 
 use App\Enums\TokenType;
-use Carbon\Carbon;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 use RuntimeException;
 use stdClass;
 
 class JWTService extends BaseJWTService
 {
-    use BlacklistTokenHelper;
-
-    private string $secretKey;
-    private string $algo;
-    private int $accessTokenTTL;
-    private int $refreshTTL;
-    private array $payload;
-    private array $requestTokenPayloads;
-    private stdClass $requestTokenHeaders;
-
-    public function __construct()
-    {
-        $this->secretKey = config("jwt_iqbal.secret");
-        $this->algo = config("jwt_iqbal.algo");
-        $this->accessTokenTTL = config("jwt_iqbal.access_token_ttl");
-        $this->refreshTTL = config("jwt_iqbal.refresh_token_ttl");
-    }
-
-    private function setDefaultPayload(): void
-    {
-        $now = time();
-        if (!Cache::get(config("jwt_iqbal.latest_incident_time_key"))) {
-            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now - 1);
-        }
-        $this->payload = [
-            'iss' => url()->current(),
-            'iat' => $now,
-            'exp' => $now,
-            'nbf' => $now,
-            'jti' => Str::random(),
-            'sub' => null,
-            'iua' => request()->userAgent()
-        ];
-    }
-
     /**
      * @param Authenticatable $authenticatable
      * @return string
-     * @throws ModelNotCompatibleWithJWTSubjectException
      * @throws InvalidActionException
+     * @throws ModelNotCompatibleWithJWTSubjectException
      */
     public function generateAccessToken(Authenticatable $authenticatable): string
     {
@@ -75,7 +35,7 @@ class JWTService extends BaseJWTService
         $blacklistIat = $this->payload["iat"] - 1;
 
         $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
-            ->executeBlacklistToken(TokenType::ACCESS->value, request()->userAgent(), $blacklistIat);
+            ->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent, $blacklistIat);
 
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
@@ -100,24 +60,9 @@ class JWTService extends BaseJWTService
         $blacklistIat = $this->payload["iat"] - 1;
 
         $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
-            ->executeBlacklistToken(TokenType::REFRESH->value, request()->userAgent(), $blacklistIat);
+            ->executeBlacklistToken(TokenType::REFRESH->value, $this->userAgent, $blacklistIat);
 
         return JWT::encode($payload, $this->secretKey, $this->algo);
-    }
-
-
-    /**
-     * @param Authenticatable $authenticatable
-     * @return JWTService
-     * @throws ModelNotCompatibleWithJWTSubjectException
-     */
-    private function checkAuthenticatableContracts(Authenticatable $authenticatable): self
-    {
-        if (!$authenticatable instanceof JWTSubject) {
-            throw new ModelNotCompatibleWithJWTSubjectException();
-        }
-
-        return $this;
     }
 
 
