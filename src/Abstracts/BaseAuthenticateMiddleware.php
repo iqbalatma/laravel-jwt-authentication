@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidIssuedUserAgent;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
@@ -20,12 +21,14 @@ abstract class BaseAuthenticateMiddleware
 
     /**
      * @throws MissingRequiredTokenException|InvalidTokenException
+     * @throws InvalidIssuedUserAgent
      */
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
         $this->checkIncidentTime()
             ->setToken()
-            ->checkIsTokenValid();
+            ->checkIsTokenValid()
+            ->checkUserAgent();
     }
 
     private function checkIncidentTime(): self
@@ -58,7 +61,7 @@ abstract class BaseAuthenticateMiddleware
     private function setAuthenticatedUser(): void
     {
         $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedTokenPayloads("sub"));
-        if (!$user){
+        if (!$user) {
             throw new InvalidTokenException("User of this token does not exists");
         }
         Auth::setUser($user);
@@ -116,14 +119,29 @@ abstract class BaseAuthenticateMiddleware
 
     /**
      * @return void
+     * @throws InvalidIssuedUserAgent
+     */
+    private function checkUserAgent(): void
+    {
+        if ($this->jwtService->getRequestedTokenPayloads("iua") !== request()->userAgent()) {
+            resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $this->jwtService->getRequestedTokenPayloads("iua"));
+            throw new InvalidIssuedUserAgent();
+        }
+    }
+
+
+    /**
+     * @return BaseAuthenticateMiddleware
      * @throws InvalidTokenException
      */
-    private function checkIsTokenValid(): void
+    private function checkIsTokenValid(): self
     {
         try {
             $this->jwtService->decodeJWT($this->token);
         } catch (Exception $e) {
             throw new InvalidTokenException();
         }
+
+        return $this;
     }
 }

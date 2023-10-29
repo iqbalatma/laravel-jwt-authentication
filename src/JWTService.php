@@ -50,6 +50,7 @@ class JWTService
             'nbf' => $now,
             'jti' => Str::random(),
             'sub' => null,
+            'iua' => request()->userAgent()
         ];
     }
 

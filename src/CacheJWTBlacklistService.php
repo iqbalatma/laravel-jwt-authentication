@@ -86,17 +86,18 @@ class CacheJWTBlacklistService implements JWTBlacklistService
 
     /**
      * @param bool $isBlacklistBothToken
+     * @param string|null $userAgent
      * @return void
      */
-    public function blacklistToken(bool $isBlacklistBothToken = false): void
+    public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {
         $this->setSubjectCacheRecord($this->requestSubjectId);
 
         if ($isBlacklistBothToken) {
-            $this->executeBlacklistToken(TokenType::REFRESH->value, $this->userAgent);
-            $this->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent);
+            $this->executeBlacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent);
+            $this->executeBlacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent);
         } else {
-            $this->executeBlacklistToken($this->tokenType, $this->userAgent);
+            $this->executeBlacklistToken($this->tokenType, $userAgent ?? $this->userAgent);
         }
     }
 }
