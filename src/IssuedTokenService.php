@@ -2,31 +2,63 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
+use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 
 class IssuedTokenService
 {
     use BlacklistTokenHelper;
 
-    /**
-     * @param string|int|null $subjectId
-     * @return Collection
-     */
-    public static function getAllToken(string|int|null $subjectId = null): Collection
+    protected Collection $tokenRecords;
+    protected string|int|null $requestSubjectId;
+
+    public function __construct(public JWTService $jwtService)
     {
-        if (!$subjectId) {
-            $subjectId = Auth::id();
+    }
+
+    /**
+     * @param string|int|null $requestSubjectId
+     * @return IssuedTokenService
+     * @throws InvalidActionException
+     */
+    protected function setRequestSubjectId(string|int|null $requestSubjectId): self
+    {
+        $this->requestSubjectId = $requestSubjectId ?: Auth::id();
+        if (!$this->requestSubjectId) {
+            throw new InvalidActionException("Subject id cannot be null");
         }
 
-        $tokens = Cache::get(self::$jwtKeyPrefix . ".$subjectId");
+        return $this;
+    }
 
-        return $tokens->filter(function ($item) {
-            return $item["iat"] < app(JWTService::class)->getRequestedTokenPayloads("iat");
+    /**
+     * @return void
+     */
+    protected function setTokenRecord(): void
+    {
+        $this->tokenRecords = Cache::get(self::$jwtKeyPrefix . ".$this->requestSubjectId") ?: collect([]);
+    }
+
+
+    /**
+     * @param string|int|null $requestSubjectId
+     * @return Collection
+     * @throws InvalidActionException
+     */
+    public static function getAllToken(string|int|null $requestSubjectId = null): Collection
+    {
+        $instance = (new static());
+        $instance->setRequestSubjectId($requestSubjectId)
+            ->setTokenRecord();
+
+        return $instance->tokenRecords->filter(function ($item) use($instance) {
+            return $item["iat"] < $instance->jwtService->getRequestedTokenPayloads("iat");
         })->values();
     }
 
@@ -86,7 +118,7 @@ class IssuedTokenService
         $instance = (new static());
         $instance->setSubjectCacheRecord($subjectId);
 
-        if (!$instance->isTokenBlacklistByTypeAndUserAgentExists(TokenType::REFRESH->value, $userAgent)){
+        if (!$instance->isTokenBlacklistByTypeAndUserAgentExists(TokenType::REFRESH->value, $userAgent)) {
             throw new EntityDoesNotExistsException("Token on device $userAgent does not exists");
         }
 
@@ -112,7 +144,7 @@ class IssuedTokenService
         $instance = (new static());
         $instance->setSubjectCacheRecord($subjectId);
 
-        if (!$instance->isTokenBlacklistByTypeAndUserAgentExists(TokenType::ACCESS->value, $userAgent)){
+        if (!$instance->isTokenBlacklistByTypeAndUserAgentExists(TokenType::ACCESS->value, $userAgent)) {
             throw new EntityDoesNotExistsException("Token on device $userAgent does not exists");
         }
 
