@@ -45,7 +45,4 @@ class IssuedToken extends Model
     {
         return (new static())->where("subject_id", $subjectId)->first();
     }
-
-
-
 }

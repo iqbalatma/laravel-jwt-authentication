@@ -10,7 +10,6 @@ use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 
 class CacheJWTBlacklistService implements JWTBlacklistService
 {
-    public string $jti;
     public string $iat;
     public string $tokenType;
     public string|int $subjectId;
@@ -27,7 +26,6 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         }
         $this->userAgent = request()->userAgent();
 
-        $this->jti = $this->jwtService->getRequestedTokenPayloads("jti");
         $this->subjectId = $this->jwtService->getRequestedTokenPayloads("sub");
         $this->iat = $this->jwtService->getRequestedTokenPayloads("iat");
         $this->tokenType = $this->jwtService->getRequestedTokenPayloads("type");
