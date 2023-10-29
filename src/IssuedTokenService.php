@@ -77,43 +77,95 @@ class IssuedTokenService
     /**
      * @param string $userAgent
      * @param string|int|null $subjectId
-     * @return void
+     * @return IssuedTokenService
      * @throws InvalidActionException
      */
-    public static function revokeTokenRefreshByUserAgent(string $userAgent, string|int|null $subjectId = null): void
+    public static function revokeTokenRefreshByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
         $instance->setSubjectCacheRecord($subjectId);
 
         $instance->updateExistingBlacklistTokenByTypeAndUserAgent(TokenType::REFRESH->value, $userAgent)
             ->updateSubjectCacheRecord();
+
+        return $instance;
     }
 
     /**
      * @param string $userAgent
      * @param string|int|null $subjectId
-     * @return void
+     * @return IssuedTokenService
      * @throws InvalidActionException
      */
-    public static function revokeTokenAccessByUserAgent(string $userAgent, string|int|null $subjectId = null): void
+    public static function revokeTokenAccessByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
         $instance->setSubjectCacheRecord($subjectId);
 
         $instance->updateExistingBlacklistTokenByTypeAndUserAgent(TokenType::ACCESS->value, $userAgent)
             ->updateSubjectCacheRecord();
+
+        return $instance;
     }
 
 
     /**
-     * @throws EntityDoesNotExistsException|InvalidActionException
+     * @param string $userAgent
+     * @param string|int|null $subjectId
+     * @return IssuedTokenService
+     * @throws InvalidActionException
      */
-    public static function revokeTokenByUserAgent(string $userAgent, string|int|null $subjectId = null): void
+    public static function revokeTokenByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
         $instance->setSubjectCacheRecord($subjectId);
 
         self::revokeTokenAccessByUserAgent($userAgent, $instance->subjectId);
         self::revokeTokenRefreshByUserAgent($userAgent, $instance->subjectId);
+
+        return $instance;
+    }
+
+
+    /**
+     * @param string|int|null $subjectId
+     * @return IssuedTokenService
+     * @throws InvalidActionException
+     */
+    public static function revokeAllToken(string|int|null $subjectId = null): IssuedTokenService
+    {
+        $instance = self::build();
+        $instance->setSubjectCacheRecord($subjectId);
+
+        $instance->issuedTokenBySubject = $instance->issuedTokenBySubject->map(function ($item) {
+            $item["iat"] = now();
+            return $item;
+        });
+
+        $instance->updateSubjectCacheRecord();
+
+        return $instance;
+    }
+
+    /**
+     * @param string|int|null $subjectId
+     * @return IssuedTokenService
+     * @throws InvalidActionException
+     */
+    public static function revokeAllTokenOnOtherUserAgent(string|int|null $subjectId = null): IssuedTokenService
+    {
+        $instance = self::build();
+        $instance->setSubjectCacheRecord($subjectId);
+
+        $instance->issuedTokenBySubject = $instance->issuedTokenBySubject->map(function ($item) {
+            if ($item["user_agent"] !== request()->userAgent()) {
+                $item["iat"] = now();
+            }
+            return $item;
+        });
+
+        $instance->updateSubjectCacheRecord();
+
+        return $instance;
     }
 }
