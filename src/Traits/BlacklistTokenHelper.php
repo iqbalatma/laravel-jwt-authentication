@@ -56,17 +56,13 @@ trait BlacklistTokenHelper
     /**
      * @param string $tokenType
      * @param string $userAgent
-     * @param int|null $iat
      * @return BaseJWTGuard|CacheJWTBlacklistService|IssuedTokenService|JWTService|BlacklistTokenHelper
      */
-    protected function updateExistingBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent, null|int $iat = null): self
+    protected function updateExistingBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent): self
     {
-        if (!$iat) {
-            $iat = time();
-        }
-        $this->issuedTokenBySubject = $this->issuedTokenBySubject->map(function ($item) use ($tokenType, $userAgent, $iat) {
+        $this->issuedTokenBySubject = $this->issuedTokenBySubject->map(function ($item) use ($tokenType, $userAgent) {
             if ($item["type"] === $tokenType && $item["user_agent"] === $userAgent) {
-                $item["iat"] = $iat;
+                $item["iat"] = time();
             }
             return $item;
         });
@@ -78,18 +74,14 @@ trait BlacklistTokenHelper
     /**
      * @param string $tokenType
      * @param string $userAgent
-     * @param int|null $iat
      * @return void
      */
-    protected function pushNewBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent, null|int $iat = null): void
+    protected function pushNewBlacklistTokenByTypeAndUserAgent(string $tokenType, string $userAgent): void
     {
-        if (!$iat) {
-            $iat = time();
-        }
         $this->issuedTokenBySubject = $this->issuedTokenBySubject->push([
             "user_agent" => $userAgent,
             "type" => $tokenType,
-            "iat" => $iat
+            "iat" => time()
         ]);
     }
 
@@ -106,18 +98,13 @@ trait BlacklistTokenHelper
     /**
      * @param string $tokenType
      * @param string $userAgent
-     * @param int|null $iat
      * @return void
      */
-    public function executeBlacklistToken(string $tokenType, string $userAgent, int|null $iat = null): void
+    public function executeBlacklistToken(string $tokenType, string $userAgent): void
     {
-        if (!$iat) {
-            $iat = time();
-        }
-
         $this->isTokenBlacklistByTypeAndUserAgentExists($tokenType, $userAgent) ?
-            $this->updateExistingBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent, $iat) :
-            $this->pushNewBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent, $iat);
+            $this->updateExistingBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent) :
+            $this->pushNewBlacklistTokenByTypeAndUserAgent($tokenType, $userAgent);
 
         $this->updateSubjectCacheRecord();
     }

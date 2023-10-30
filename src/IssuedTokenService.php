@@ -34,7 +34,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["iat"] < $instance->jwtService->getRequestedIat();
+            return $item["iat"] <= $instance->jwtService->getRequestedIat();
         })->values();
     }
 
@@ -50,7 +50,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["type"] === TokenType::REFRESH->value && $item["iat"] < $instance->jwtService->getRequestedIat();
+            return $item["type"] === TokenType::REFRESH->value && $item["iat"] <= $instance->jwtService->getRequestedIat();
         })->values();
     }
 
@@ -66,7 +66,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["type"] === TokenType::ACCESS->value && $item["iat"] < $instance->jwtService->getRequestedIat();
+            return $item["type"] === TokenType::ACCESS->value && $item["iat"] <= $instance->jwtService->getRequestedIat();
         })->values();
     }
 

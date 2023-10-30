@@ -4,6 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication;
 
 use Illuminate\Contracts\Auth\Authenticatable;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
@@ -22,12 +23,13 @@ class JWTGuard extends BaseJWTGuard
         return $this->user ?? null;
     }
 
+
     /**
      * @throws ModelNotCompatibleWithJWTSubjectException|Exceptions\InvalidActionException
      */
     public function validate(array $credentials = []): bool
     {
-        return (bool) $this->attempt($credentials, false);
+        return (bool)$this->attempt($credentials, false);
     }
 
 
@@ -67,14 +69,15 @@ class JWTGuard extends BaseJWTGuard
         return false;
     }
 
+
     /**
      * @param JWTSubject|null $user
      * @return void
      * @throws ModelNotCompatibleWithJWTSubjectException|EntityDoesNotExistsException|Exceptions\InvalidActionException
      */
-    public function login(JWTSubject|null $user):void
+    public function login(JWTSubject|null $user): void
     {
-        if (!$user){
+        if (!$user) {
             throw new EntityDoesNotExistsException("User does not exists !");
         }
         $this->fireLoginEvent($user);
@@ -82,15 +85,53 @@ class JWTGuard extends BaseJWTGuard
         $this->refreshToken = $this->jwtService->generateRefreshToken($user);
     }
 
+
     /**
      * @return void
      * @throws InvalidActionException
      */
     public function logout(): void
     {
+        $this->revokeCurrentToken();
+    }
+
+
+    /**
+     * @return void
+     * @throws InvalidActionException
+     */
+    public function revokeCurrentToken(): void
+    {
         $this->setSubjectCacheRecord($this->jwtService->getRequestedSub())
             ->executeBlacklistToken($this->jwtService->getRequestedType(), request()->userAgent());
     }
+
+
+    /**
+     * @param JWTSubject|null $user
+     * @return array
+     * @throws EntityDoesNotExistsException
+     * @throws InvalidActionException
+     * @throws ModelNotCompatibleWithJWTSubjectException
+     */
+    public function refreshToken(JWTSubject|null $user): array
+    {
+        if ($this->jwtService->getRequestedType() !== TokenType::REFRESH->value){
+            throw new InvalidActionException("Refresh token only can be done using refresh token type authorization");
+        }
+
+        if (!$user) {
+            throw new InvalidActionException("Regenerate token failed. User is null");
+        }
+
+        $this->login($user);
+
+        return [
+            "access_token" => $this->getAccessToken(),
+            "refresh_token" => $this->getRefreshToken(),
+        ];
+    }
+
 
     /**
      * Get the last user we attempted to authenticate.

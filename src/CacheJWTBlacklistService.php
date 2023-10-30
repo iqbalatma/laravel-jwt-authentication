@@ -40,6 +40,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
     /**
      * @param int $incidentTime
      * @return bool
+     * @throws InvalidActionException
      */
     public function isTokenBlacklisted(int $incidentTime): bool
     {
@@ -74,7 +75,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
          */
         if ($issuedTokenBySubject->where("user_agent", $this->userAgent)
             ->where('type', $this->tokenType)
-            ->where('iat', ">=", $this->iat)
+            ->where('iat', ">", $this->iat)
             ->first()) {
             return true;
         }
