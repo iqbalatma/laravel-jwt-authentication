@@ -94,6 +94,7 @@ class JWTGuard extends BaseJWTGuard
     public function logout(): void
     {
         $this->revokeCurrentToken();
+        $this->user = null;
     }
 
 
