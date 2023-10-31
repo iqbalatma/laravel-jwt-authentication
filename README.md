@@ -11,8 +11,8 @@ This is the lists of next feature
 - [ ] Create command console for generate certificates
 - [x] Set user on guard login
 - [x] Reset user on guard logout
-- [ ] Add information on config jwt_iqbal
-- [ ] Rename config from jwt_iqbal into jwt
+- [x] Add information on config jwt_iqbal
+- [x] Rename config from jwt_iqbal into jwt
 - [ ] Rename guard from jwt-iqbal into jwt
 ***
 
