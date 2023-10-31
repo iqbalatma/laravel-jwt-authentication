@@ -81,6 +81,7 @@ class JWTGuard extends BaseJWTGuard
             throw new EntityDoesNotExistsException("User does not exists !");
         }
         $this->fireLoginEvent($user);
+        $this->setUser($user);
         $this->accessToken = $this->jwtService->generateAccessToken($user);
         $this->refreshToken = $this->jwtService->generateRefreshToken($user);
     }
