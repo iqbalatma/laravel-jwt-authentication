@@ -34,7 +34,6 @@ class JWTService extends BaseJWTService
 
         $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
             ->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent);
-
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 

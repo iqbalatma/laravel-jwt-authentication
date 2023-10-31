@@ -44,9 +44,9 @@ abstract class BaseAuthenticateMiddleware
      */
     protected function checkIncidentTime(): self
     {
-        if (!($this->incidentTime = Cache::get(config("jwt_iqbal.latest_incident_time_key")))) {
+        if (!($this->incidentTime = Cache::get(config("jwt.latest_incident_time_key")))) {
             $now = time();
-            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now);
+            Cache::forever(config("jwt.latest_incident_time_key"), $now);
             $this->incidentTime = $now;
         }
         return $this;
