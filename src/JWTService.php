@@ -2,11 +2,11 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use App\Enums\TokenType;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use RuntimeException;
