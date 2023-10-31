@@ -19,9 +19,9 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
     public function register(): void
     {
         $this->publishes([
-            __DIR__ . "/Config/jwt_iqbal.php" => config_path("jwt_iqbal.php")
+            __DIR__ . "/Config/jwt.php" => config_path("jwt.php")
         ], "config");
-        $this->mergeConfigFrom(__DIR__ . '/Config/jwt_iqbal.php', 'jwt_iqbal');
+        $this->mergeConfigFrom(__DIR__ . '/Config/jwt.php', 'jwt');
 
         $this->app->singleton(JWTService::class, function () {
             return new JWTService();

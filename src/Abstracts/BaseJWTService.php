@@ -30,10 +30,10 @@ abstract class BaseJWTService
      */
     public function __construct()
     {
-        $this->secretKey = config("jwt_iqbal.secret");
-        $this->algo = config("jwt_iqbal.algo");
-        $this->accessTokenTTL = config("jwt_iqbal.access_token_ttl");
-        $this->refreshTTL = config("jwt_iqbal.refresh_token_ttl");
+        $this->secretKey = config("jwt.secret");
+        $this->algo = config("jwt.algo");
+        $this->accessTokenTTL = config("jwt.access_token_ttl");
+        $this->refreshTTL = config("jwt.refresh_token_ttl");
         $this->userAgent = request()->userAgent();
         if (!$this->userAgent) {
             throw new MissingRequiredHeaderException("Missing required header User-Agent");
@@ -43,8 +43,8 @@ abstract class BaseJWTService
     protected function setDefaultPayload(): void
     {
         $now = time();
-        if (!Cache::get(config("jwt_iqbal.latest_incident_time_key"))) {
-            Cache::forever(config("jwt_iqbal.latest_incident_time_key"), $now - 1);
+        if (!Cache::get(config("jwt.latest_incident_time_key"))) {
+            Cache::forever(config("jwt.latest_incident_time_key"), $now - 1);
         }
         $this->payload = [
             'iss' => url()->current(),
