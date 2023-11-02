@@ -76,6 +76,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         if ($issuedTokenBySubject->where("user_agent", $this->userAgent)
             ->where('type', $this->tokenType)
             ->where('iat', ">", $this->iat)
+            ->where("is_blacklisted", true)
             ->first()) {
             return true;
         }
@@ -95,10 +96,10 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         $this->setSubjectCacheRecord($this->sub);
 
         if ($isBlacklistBothToken) {
-            $this->executeBlacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent);
-            $this->executeBlacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent);
+            $this->executeBlacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent, true);
+            $this->executeBlacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent, true);
         } else {
-            $this->executeBlacklistToken($this->tokenType, $userAgent ?? $this->userAgent);
+            $this->executeBlacklistToken($this->tokenType, $userAgent ?? $this->userAgent, true);
         }
     }
 }

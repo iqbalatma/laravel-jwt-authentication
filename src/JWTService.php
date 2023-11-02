@@ -33,7 +33,7 @@ class JWTService extends BaseJWTService
         ], $authenticatable->getJWTCustomClaims());
 
         $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
-            ->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent);
+            ->executeBlacklistToken(TokenType::ACCESS->value, $this->userAgent, false);
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }
 
@@ -55,7 +55,7 @@ class JWTService extends BaseJWTService
         ], $authenticatable->getJWTCustomClaims());
 
         $this->setSubjectCacheRecord($authenticatable->getAuthIdentifier())
-            ->executeBlacklistToken(TokenType::REFRESH->value, $this->userAgent);
+            ->executeBlacklistToken(TokenType::REFRESH->value, $this->userAgent, false);
 
         return JWT::encode($payload, $this->secretKey, $this->algo);
     }

@@ -34,7 +34,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["iat"] <= $instance->jwtService->getRequestedIat();
+            return $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -50,7 +50,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["type"] === TokenType::REFRESH->value && $item["iat"] <= $instance->jwtService->getRequestedIat();
+            return $item["type"] === TokenType::REFRESH->value && $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -66,7 +66,7 @@ class IssuedTokenService
         $instance->setSubjectCacheRecord($subjectId);
 
         return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["type"] === TokenType::ACCESS->value && $item["iat"] <= $instance->jwtService->getRequestedIat();
+            return $item["type"] === TokenType::ACCESS->value && $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -156,7 +156,8 @@ class IssuedTokenService
 
         $instance->issuedTokenBySubject = $instance->issuedTokenBySubject->map(function ($item) {
             if ($item["user_agent"] !== request()->userAgent()) {
-                $item["iat"] = now();
+                $item["iat"] = time();
+                $item["is_blacklisted"] = true;
             }
             return $item;
         });

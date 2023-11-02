@@ -105,7 +105,7 @@ class JWTGuard extends BaseJWTGuard
     public function revokeCurrentToken(): void
     {
         $this->setSubjectCacheRecord($this->jwtService->getRequestedSub())
-            ->executeBlacklistToken($this->jwtService->getRequestedType(), request()->userAgent());
+            ->executeBlacklistToken($this->jwtService->getRequestedType(), request()->userAgent(), true);
     }
 
 
