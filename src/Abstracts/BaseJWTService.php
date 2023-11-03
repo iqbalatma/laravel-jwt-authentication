@@ -9,12 +9,12 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
-use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
+use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
 use stdClass;
 
 abstract class BaseJWTService
 {
-    use BlacklistTokenHelper;
+    use IssuedTokenHelper;
 
     protected string $secretKey;
     protected string $algo;

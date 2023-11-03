@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
 
 class LaravelJWTAuthenticationProvider extends ServiceProvider
@@ -27,9 +26,9 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTService();
         });
 
-        $this->app->bind(JWTBlacklistService::class, function (Application $app) {
+        $this->app->bind(\Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService::class, function (Application $app) {
             $jwtService = $app->make(JWTService::class);
-            return new CacheJWTBlacklistService($jwtService);
+            return new JWTBlacklistService($jwtService);
         });
     }
 

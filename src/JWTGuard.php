@@ -104,8 +104,12 @@ class JWTGuard extends BaseJWTGuard
      */
     public function revokeCurrentToken(): void
     {
-        $this->setSubjectCacheRecord($this->jwtService->getRequestedSub())
-            ->executeBlacklistToken($this->jwtService->getRequestedType(), request()->userAgent());
+        $sub = $this->jwtService->getRequestedSub();
+        $type = $this->jwtService->getRequestedType();
+        $userAgent = request()->userAgent();
+
+        $this->jwtService->setIssuedToken($sub)
+            ->blacklistToken($type, $userAgent);
     }
 
 
@@ -118,7 +122,7 @@ class JWTGuard extends BaseJWTGuard
      */
     public function refreshToken(JWTSubject|null $user): array
     {
-        if ($this->jwtService->getRequestedType() !== TokenType::REFRESH->value){
+        if ($this->jwtService->getRequestedType() !== TokenType::REFRESH->value) {
             throw new InvalidActionException("Refresh token only can be done using refresh token type authorization");
         }
 
