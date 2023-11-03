@@ -5,11 +5,9 @@ namespace Iqbalatma\LaravelJwtAuthentication;
 use Illuminate\Support\Collection;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 
 class IssuedTokenService
 {
-    use BlacklistTokenHelper;
 
     public function __construct(public JWTService $jwtService)
     {
@@ -31,10 +29,10 @@ class IssuedTokenService
     public static function getAllToken(string|int|null $subjectId = null): Collection
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
-            return $item["is_blacklisted"] === false;
+        return $instance->jwtService->issuedTokens->filter(function ($item) {
+                return $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -47,9 +45,9 @@ class IssuedTokenService
     public static function getAllTokenRefresh(string|int|null $subjectId = null): Collection
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
+        return $instance->jwtService->issuedTokens->filter(function ($item) {
             return $item["type"] === TokenType::REFRESH->value && $item["is_blacklisted"] === false;
         })->values();
     }
@@ -63,9 +61,9 @@ class IssuedTokenService
     public static function getAllTokenAccess(string|int|null $subjectId = null): Collection
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        return $instance->issuedTokenBySubject->filter(function ($item) use ($instance) {
+        return $instance->jwtService->issuedTokens->filter(function ($item) {
             return $item["type"] === TokenType::ACCESS->value && $item["is_blacklisted"] === false;
         })->values();
     }
@@ -80,10 +78,10 @@ class IssuedTokenService
     public static function revokeTokenRefreshByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->updateExistingBlacklistTokenByTypeAndUserAgent(TokenType::REFRESH->value, $userAgent)
-            ->updateSubjectCacheRecord();
+        $instance->jwtService->updateIssuedToken(TokenType::REFRESH->value, $userAgent)
+            ->replaceIssuedTokenRecord();
 
         return $instance;
     }
@@ -97,10 +95,10 @@ class IssuedTokenService
     public static function revokeTokenAccessByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->updateExistingBlacklistTokenByTypeAndUserAgent(TokenType::ACCESS->value, $userAgent)
-            ->updateSubjectCacheRecord();
+        $instance->jwtService->updateIssuedToken(TokenType::ACCESS->value, $userAgent)
+            ->replaceIssuedTokenRecord();
 
         return $instance;
     }
@@ -109,18 +107,13 @@ class IssuedTokenService
     /**
      * @param string $userAgent
      * @param string|int|null $subjectId
-     * @return IssuedTokenService
+     * @return void
      * @throws InvalidActionException
      */
-    public static function revokeTokenByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
+    public static function revokeTokenByUserAgent(string $userAgent, string|int|null $subjectId = null): void
     {
-        $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
-
-        self::revokeTokenAccessByUserAgent($userAgent, $instance->subjectId);
-        self::revokeTokenRefreshByUserAgent($userAgent, $instance->subjectId);
-
-        return $instance;
+        self::revokeTokenAccessByUserAgent($userAgent);
+        self::revokeTokenRefreshByUserAgent($userAgent);
     }
 
 
@@ -132,14 +125,14 @@ class IssuedTokenService
     public static function revokeAllToken(string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->issuedTokenBySubject = $instance->issuedTokenBySubject->map(function ($item) {
+        $instance->jwtService->issuedTokens = $instance->jwtService->issuedTokens->map(function ($item) {
             $item["iat"] = now();
             return $item;
         });
 
-        $instance->updateSubjectCacheRecord();
+        $instance->jwtService->replaceIssuedTokenRecord();
 
         return $instance;
     }
@@ -152,9 +145,9 @@ class IssuedTokenService
     public static function revokeAllTokenOnOtherUserAgent(string|int|null $subjectId = null): IssuedTokenService
     {
         $instance = self::build();
-        $instance->setSubjectCacheRecord($subjectId);
+        $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->issuedTokenBySubject = $instance->issuedTokenBySubject->map(function ($item) {
+        $instance->jwtService->issuedTokens= $instance->jwtService->issuedTokens->map(function ($item) {
             if ($item["user_agent"] !== request()->userAgent()) {
                 $item["iat"] = time();
                 $item["is_blacklisted"] = true;
@@ -162,7 +155,7 @@ class IssuedTokenService
             return $item;
         });
 
-        $instance->updateSubjectCacheRecord();
+        $instance->jwtService->replaceIssuedTokenRecord();
 
         return $instance;
     }

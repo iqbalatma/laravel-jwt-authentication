@@ -8,13 +8,9 @@ use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
-use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 
-class CacheJWTBlacklistService implements JWTBlacklistService
+class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService
 {
-    use BlacklistTokenHelper;
-
     public string $iat;
     public string $exp;
     public string $tokenType;
@@ -37,6 +33,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
         $this->tokenType = $this->jwtService->getRequestedType();
     }
 
+
     /**
      * @param int $incidentTime
      * @return bool
@@ -44,7 +41,7 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function isTokenBlacklisted(int $incidentTime): bool
     {
-        $cachePrefix = self::$jwtKeyPrefix;
+        $cachePrefix = JWTService::$JWT_CACHE_KEY_PREFIX;
 
 
         /**
@@ -93,13 +90,13 @@ class CacheJWTBlacklistService implements JWTBlacklistService
      */
     public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {
-        $this->setSubjectCacheRecord($this->sub);
+        $this->jwtService->setIssuedToken($this->sub);
 
         if ($isBlacklistBothToken) {
-            $this->executeBlacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent, true);
-            $this->executeBlacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent, true);
+            $this->jwtService->blacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent);
+            $this->jwtService->blacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent);
         } else {
-            $this->executeBlacklistToken($this->tokenType, $userAgent ?? $this->userAgent, true);
+            $this->jwtService->blacklistToken($this->tokenType, $userAgent ?? $this->userAgent);
         }
     }
 }

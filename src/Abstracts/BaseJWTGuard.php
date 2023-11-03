@@ -9,11 +9,10 @@ use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Iqbalatma\LaravelJwtAuthentication\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
-use Iqbalatma\LaravelJwtAuthentication\Traits\BlacklistTokenHelper;
 
 abstract class BaseJWTGuard implements Guard
 {
-    use GuardHelpers, AuthEventTrait, BlacklistTokenHelper;
+    use GuardHelpers, AuthEventTrait;
     protected Authenticatable|null $lastAttempted;
     public function __construct(JWTService $jwtService, UserProvider $provider, Dispatcher $events)
     {
