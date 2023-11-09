@@ -22,7 +22,7 @@ return [
     | Do not expose this jwt secret
     |
     */
-    'secret' => env('JWT_SECRET'),
+    'secret' => env('JWT_SECRET', null),
 
 
     /*

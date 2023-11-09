@@ -9,12 +9,12 @@ class JWTSecretKey implements JWTKey
     /**
      * @return string
      */
-    public function getPublicKey():string
+    public function getPublicKey(): string
     {
         return config("jwt.secret");
     }
 
-    public function getPrivateKey():string
+    public function getPrivateKey(): string
     {
         return config("jwt.secret");
     }

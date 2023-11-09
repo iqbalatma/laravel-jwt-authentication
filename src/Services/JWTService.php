@@ -35,7 +35,7 @@ class JWTService extends BaseJWTService
         $this->setIssuedToken($authenticatable->getAuthIdentifier())
             ->blacklistToken(TokenType::ACCESS->value, $this->userAgent, false);
 
-        return JWT::encode($payload, $this->jwtKey->getPublicKey(), $this->algo);
+        return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->algo);
     }
 
 
@@ -58,7 +58,7 @@ class JWTService extends BaseJWTService
         $this->setIssuedToken($authenticatable->getAuthIdentifier())
             ->blacklistToken(TokenType::REFRESH->value, $this->userAgent, false);
 
-        return JWT::encode($payload, $this->jwtKey->getPublicKey(), $this->algo);
+        return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->algo);
     }
 
 
@@ -69,7 +69,7 @@ class JWTService extends BaseJWTService
     public function decodeJWT(string $token): array
     {
         $headers = new stdClass();
-        $this->requestTokenPayloads = (array) JWT::decode($token, new Key($this->jwtKey->getPrivateKey(), $this->algo), $headers);
+        $this->requestTokenPayloads = (array)JWT::decode($token, new Key($this->jwtKey->getPublicKey(), $this->algo), $headers);
 
         $this->requestTokenHeaders = $headers;
         return $this->requestTokenPayloads;

@@ -11,12 +11,14 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateCertCommand;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\KeyNotAvailableException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTCertKey;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTSecretKey;
+use function Laravel\Prompts\confirm;
 
 class LaravelJWTAuthenticationProvider extends ServiceProvider
 {
@@ -30,9 +32,17 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         ], "config");
         $this->mergeConfigFrom(__DIR__ . '/Config/jwt.php', 'jwt');
 
-        $this->app->singleton(JWTKey::class, function (){
-//            return new JWTSecretKey();
-            return new JWTCertKey();
+        $this->app->singleton(JWTKey::class, function () {
+            if (config("jwt.jwt_public_key") && config("jwt.jwt_private_key")) {
+                return new JWTCertKey(config("jwt.jwt_passphrase"));
+            }
+
+
+            if (config("jwt.secret")){
+                return new JWTSecretKey();
+            }
+
+            throw new KeyNotAvailableException();
         });
 
         $this->app->singleton(JWTService::class, function (Application $app) {
@@ -51,7 +61,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        if ($this->app->runningInConsole()){
+        if ($this->app->runningInConsole()) {
             $this->commands([
                 JWTGenerateSecretCommand::class,
                 JWTGenerateCertCommand::class,
