@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
 use stdClass;
 
@@ -28,7 +29,7 @@ abstract class BaseJWTService
     /**
      * @throws MissingRequiredHeaderException
      */
-    public function __construct()
+    public function __construct(protected JWTKey $jwtKey)
     {
         $this->secretKey = config("jwt.secret");
         $this->algo = config("jwt.algo");

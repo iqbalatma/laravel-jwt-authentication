@@ -1,6 +1,6 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication;
+namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Exception;
 use Illuminate\Support\Collection;

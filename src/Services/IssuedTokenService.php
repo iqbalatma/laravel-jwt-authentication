@@ -1,6 +1,6 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication;
+namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Illuminate\Support\Collection;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;

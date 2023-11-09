@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 
 trait IssuedTokenHelper
 {

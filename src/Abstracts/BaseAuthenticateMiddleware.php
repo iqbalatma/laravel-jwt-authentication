@@ -13,7 +13,7 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
-use Iqbalatma\LaravelJwtAuthentication\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 
 abstract class BaseAuthenticateMiddleware
 {

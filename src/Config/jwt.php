@@ -61,5 +61,11 @@ return [
     | This key is to set incident date time on cache
     |
     */
-    'latest_incident_time_key' => "jwt.latest_incident_date_time"
+    'latest_incident_time_key' => "jwt.latest_incident_date_time",
+
+
+    "jwt_private_key" => env("JWT_PRIVATE_KEY", null),
+    "jwt_public_key" => env("JWT_PUBLIC_KEY", null),
+    "jwt_passphrase" => env("JWT_PASSPHRASE", null),
+
 ];
