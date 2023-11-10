@@ -45,8 +45,8 @@ php artisan vendor:publish --provider='Iqbalatma\LaravelJwtAuthentication\Larave
 
 'guards' => [
     ...
-    "jwt-iqbal" => [
-        "driver" => "jwt-iqbal",
+    "jwt" => [
+        "driver" => "jwt",
         "provider" => "users"
     ]
 ],
@@ -62,7 +62,6 @@ return [
     'secret' => env('JWT_SECRET'),
     'access_token_ttl' => env('JWT_TTL', 60 * 60),
     'refresh_token_ttl' => env('JWT_REFRESH_TTL', 60 * 60 * 24 * 7),
-    'latest_incident_time_key' => "jwt.latest_incident_date_time"
 ];
 ```
 
