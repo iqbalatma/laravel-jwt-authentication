@@ -53,6 +53,8 @@ php artisan vendor:publish --provider='Iqbalatma\LaravelJwtAuthentication\Larave
 ```
 
 ## Configuration config/jwt_iqbal.php
+Jwt signin using public and private key is first priority, so if you define private and public key, jwt will be signing using this key pairs.
+But if you do not define private and public key, jwt will use secret key for signing. If two type key does not exists, it will throw an error.
 ```php
 <?php
 #token ttl is token lifetime on (seconds)
