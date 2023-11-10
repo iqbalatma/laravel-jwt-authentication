@@ -2,16 +2,51 @@
 
 return [
     /*
-        |--------------------------------------------------------------------------
-        | JWT Sign in Algorithm
-        |--------------------------------------------------------------------------
-        |
-        | Algorithm for sign jwt token. This token is using encoder and decoder from
-        | https://github.com/firebase/php-jwt
-        |
-        */
+    |--------------------------------------------------------------------------
+    | JWT Sign in Algorithm
+    |--------------------------------------------------------------------------
+    |
+    | Algorithm for sign jwt token. This token is using encoder and decoder from
+    | https://github.com/firebase/php-jwt
+    |
+    */
     'algo' => env('JWT_ALGO', 'HS256'),
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Private Key
+    |--------------------------------------------------------------------------
+    |
+    | This private key use for first priority of encoding and decoding jwt (signing)
+    | so if this key (private key) and (public key) exists, jwt will sign using
+    | this key pairs as first priority. If this key pairs does not exist, sign jwt will
+    | using jwt secret. If secret does not exist it will throw an error
+    |
+    */
+    "jwt_private_key" => env("JWT_PRIVATE_KEY", null),
+
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Public Key
+    |--------------------------------------------------------------------------
+    |
+    | This public key is part of key pairs for signing jwt token.
+    |
+    */
+    "jwt_public_key" => env("JWT_PUBLIC_KEY", null),
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | JWT Passphrase
+    |--------------------------------------------------------------------------
+    |
+    | This is passphrase use to get jwt private key that translate the key
+    | using this passphrase
+    |
+    */
+    "jwt_passphrase" => env("JWT_PASSPHRASE", null),
 
     /*
     |--------------------------------------------------------------------------
@@ -37,6 +72,7 @@ return [
     */
     'access_token_ttl' => env('JWT_TTL', 60 * 60),
 
+
     /*
     |--------------------------------------------------------------------------
     | Refresh Token TTL
@@ -49,23 +85,4 @@ return [
     |
     */
     'refresh_token_ttl' => env('JWT_REFRESH_TTL', 60 * 60 * 24 * 7),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Incident Time Key
-    |--------------------------------------------------------------------------
-    |
-    | Since we using cache for blacklist token, there is possibility for cache like
-    | redis got an incident and lost all blacklist record. When that happened we
-    | will invalidate all token before now
-    | This key is to set incident date time on cache
-    |
-    */
-    'latest_incident_time_key' => "jwt.latest_incident_date_time",
-
-
-    "jwt_private_key" => env("JWT_PRIVATE_KEY", null),
-    "jwt_public_key" => env("JWT_PUBLIC_KEY", null),
-    "jwt_passphrase" => env("JWT_PASSPHRASE", null),
-
 ];
