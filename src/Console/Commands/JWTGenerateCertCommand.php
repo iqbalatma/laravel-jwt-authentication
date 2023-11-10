@@ -43,8 +43,8 @@ class JWTGenerateCertCommand extends Command
         $force = $this->option('force');
         $directory = $this->option('dir') ? $this->option('dir') : 'storage/certs';
         $algo = $this->option('algo') ? $this->option('algo') : 'rsa';
-        $bits = $this->option('bits') ? intval($this->option('bits')) : 4096;
-        $shaVariant = $this->option('sha') ? intval($this->option('sha')) : 512;
+        $bits = $this->option('bits') ? (int)$this->option('bits') : 4096;
+        $shaVariant = $this->option('sha') ? (int)$this->option('sha') : 512;
         $curve = $this->option('curve') ? $this->option('curve') : 'prime256v1';
         if ($this->option('ask-passphrase')) {
             $passphrase = $this->secret('Passphrase');
@@ -88,6 +88,7 @@ class JWTGenerateCertCommand extends Command
                 $this->error('Unknown algorithm');
                 return;
         }
+
         // Create the private and public key
         $res = openssl_pkey_new([
             'digest_alg' => sprintf('sha%d', $shaVariant),

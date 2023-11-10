@@ -18,7 +18,6 @@ use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTCertKey;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTSecretKey;
-use function Laravel\Prompts\confirm;
 
 class LaravelJWTAuthenticationProvider extends ServiceProvider
 {

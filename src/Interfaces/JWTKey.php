@@ -15,4 +15,9 @@ interface JWTKey
      * @return string|bool|OpenSSLAsymmetricKey
      */
     public function getPrivateKey(): string|bool|OpenSSLAsymmetricKey;
+
+    /**
+     * @return string
+     */
+    public function getAlgo():string;
 }
