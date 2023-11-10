@@ -17,6 +17,8 @@ abstract class BaseJWTService
 {
     use IssuedTokenHelper;
 
+    public const LATEST_INCIDENT_TIME_KEY = "jwt.latest_incident_date_time";
+
     protected string|null $userAgent;
     protected int $accessTokenTTL;
     protected int $refreshTTL;
@@ -44,8 +46,8 @@ abstract class BaseJWTService
     protected function setDefaultPayload(): void
     {
         $now = time();
-        if (!Cache::get("jwt.latest_incident_date_time")) {
-            Cache::forever("jwt.latest_incident_date_time", $now - 1);
+        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
+            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
         }
         $this->payload = [
             'iss' => url()->current(),
