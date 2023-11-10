@@ -7,13 +7,13 @@ This site was built using package from [firebase/php-jwt](https://github.com/fir
 
 ## Next Feature
 This is the lists of next feature
-- [ ] Using certificates on encode and decode JWT
-- [ ] Create command console for generate certificates
+- [x] Using certificates on encode and decode JWT
+- [x] Create command console for generate certificates
 - [x] Set user on guard login
 - [x] Reset user on guard logout
 - [x] Add information on config jwt_iqbal
 - [x] Rename config from jwt_iqbal into jwt
-- [ ] Rename guard from jwt-iqbal into jwt
+- [x] Rename guard from jwt-iqbal into jwt
 ***
 
 ## How To Install
