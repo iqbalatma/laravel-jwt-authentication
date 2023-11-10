@@ -7,8 +7,9 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
 use stdClass;
 
@@ -16,8 +17,6 @@ abstract class BaseJWTService
 {
     use IssuedTokenHelper;
 
-    protected string $secretKey;
-    protected string $algo;
     protected string|null $userAgent;
     protected int $accessTokenTTL;
     protected int $refreshTTL;
@@ -28,10 +27,8 @@ abstract class BaseJWTService
     /**
      * @throws MissingRequiredHeaderException
      */
-    public function __construct()
+    public function __construct(protected JWTKey $jwtKey)
     {
-        $this->secretKey = config("jwt.secret");
-        $this->algo = config("jwt.algo");
         $this->accessTokenTTL = config("jwt.access_token_ttl");
         $this->refreshTTL = config("jwt.refresh_token_ttl");
         $this->userAgent = request()->userAgent();
@@ -40,11 +37,15 @@ abstract class BaseJWTService
         }
     }
 
+
+    /**
+     * @return void
+     */
     protected function setDefaultPayload(): void
     {
         $now = time();
-        if (!Cache::get(config("jwt.latest_incident_time_key"))) {
-            Cache::forever(config("jwt.latest_incident_time_key"), $now - 1);
+        if (!Cache::get("jwt.latest_incident_date_time")) {
+            Cache::forever("jwt.latest_incident_date_time", $now - 1);
         }
         $this->payload = [
             'iss' => url()->current(),
@@ -56,6 +57,7 @@ abstract class BaseJWTService
             'iua' => $this->userAgent
         ];
     }
+
 
     /**
      * @param Authenticatable $authenticatable
@@ -75,19 +77,44 @@ abstract class BaseJWTService
     /**
      * @return string
      */
-    public function getRequestedIat(): string
+    public function getRequestedIss(): string
     {
-        return $this->getRequestedTokenPayloads("iat");
+        return $this->getRequestedTokenPayloads("iss");
     }
 
 
     /**
      * @return string
      */
-    public function getRequestedIua(): string
+    public function getRequestedIat(): string
     {
-        return $this->getRequestedTokenPayloads("iua");
+        return $this->getRequestedTokenPayloads("iat");
     }
+
+    /**
+     * @return string
+     */
+    public function getRequestedExp(): string
+    {
+        return $this->getRequestedTokenPayloads("exp");
+    }
+
+    /**
+     * @return string
+     */
+    public function getRequestedNbf(): string
+    {
+        return $this->getRequestedTokenPayloads("nbf");
+    }
+
+    /**
+     * @return string
+     */
+    public function getRequestedJti(): string
+    {
+        return $this->getRequestedTokenPayloads("jti");
+    }
+
 
     /**
      * @return string
@@ -101,18 +128,18 @@ abstract class BaseJWTService
     /**
      * @return string
      */
-    public function getRequestedType(): string
+    public function getRequestedIua(): string
     {
-        return $this->getRequestedTokenPayloads("type");
+        return $this->getRequestedTokenPayloads("iua");
     }
 
 
     /**
      * @return string
      */
-    public function getRequestedExp(): string
+    public function getRequestedType(): string
     {
-        return $this->getRequestedTokenPayloads("exp");
+        return $this->getRequestedTokenPayloads("type");
     }
 
 
