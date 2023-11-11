@@ -168,5 +168,35 @@ Auth::getAccessToken();
 Auth::getRefreshToken();
 ```
 
+## Issued Token Service
+This is a service related to issued token, access or refresh token. You can get list of issued token with their user-agent or revoke the token
+
+```php
+use Iqbalatma\LaravelJwtAuthentication\Services\IssuedTokenService;
+
+#use to get all issued token
+IssuedTokenService::getAllToken();
+
+#use to get all issued refresh token
+IssuedTokenService::getAllTokenRefresh()
+
+#use to get all issued access token
+IssuedTokenService::getAllTokenAccess();
+
+#use to revoke refresh token by user agent string name
+IssuedTokenService::revokeTokenRefreshByUserAgent('user-agent-name');
+
+#use to revoke access token by user agent string name
+IssuedTokenService::revokeTokenAccessByUserAgent('user-agent-name');
+
+#use to revoke both access and refresh token by user agent string name
+IssuedTokenService::revokeTokenByUserAgent('user-agent-name');
+
+#use to revoke all token
+IssuedTokenService::revokeAllToken();
+
+#use to revoke all token but current token
+IssuedTokenService::revokeAllTokenOnOtherUserAgent();
+```
 
 
