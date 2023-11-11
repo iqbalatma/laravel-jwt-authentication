@@ -90,10 +90,14 @@ return [
 
 ***
 
-## Generate JWT Secret
-This is used for generate secret for signing JWT and decoding JWT
+## Generate JWT Credentials
+This credential is used for sign jwt token and make sure the token is valid
 ```shell
 php artisan jwt:secret
+```
+or using pairs of public and secret key
+```shell
+php artisan jwt:generate-certs
 ```
 
 ***
