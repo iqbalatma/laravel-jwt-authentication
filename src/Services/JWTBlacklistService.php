@@ -70,11 +70,16 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfa
          * it's mean current iat is no longer valid
          * because the valid token is when iat greater than blacklisted iat
          */
-        if ($issuedTokenBySubject->where("user_agent", $this->userAgent)
-            ->where('type', $this->tokenType)
-            ->where('iat', ">", $this->iat)
-            ->where("is_blacklisted", true)
-            ->first()) {
+        if (
+            $issuedTokenBySubject->where("user_agent", $this->userAgent)
+                ->where('type', $this->tokenType)
+                ->where('iat', ">", $this->iat)
+                ->first() ||
+            $issuedTokenBySubject->where("user_agent", $this->userAgent)
+                ->where('type', $this->tokenType)
+                ->where("is_blacklisted", true)
+                ->first()
+        ) {
             return true;
         }
 
