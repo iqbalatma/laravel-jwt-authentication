@@ -21,21 +21,9 @@ abstract class BaseAuthenticateMiddleware
     protected string|null $userAgent;
     protected int|null $incidentTime;
 
-    /**
-     * @throws MissingRequiredTokenException|InvalidTokenException
-     * @throws InvalidIssuedUserAgent|MissingRequiredHeaderException
-     */
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
-        $this->userAgent = $this->request->userAgent();
-        if (!$this->userAgent) {
-            throw new MissingRequiredHeaderException("Missing required header User-Agent");
-        }
 
-        $this->checkIncidentTime()
-            ->setToken()
-            ->checkIsTokenValid()
-            ->checkUserAgent();
     }
 
 
@@ -55,12 +43,24 @@ abstract class BaseAuthenticateMiddleware
     /**
      * @param string $tokenType
      * @return void
-     * @throws InvalidTokenTypeException
+     * @throws InvalidIssuedUserAgent
      * @throws InvalidTokenException
+     * @throws InvalidTokenTypeException
+     * @throws MissingRequiredHeaderException
+     * @throws MissingRequiredTokenException
      */
     protected function authenticate(string $tokenType): void
     {
-        $this->checkTokenType($tokenType)
+        $this->userAgent = $this->request->userAgent();
+        if (!$this->userAgent) {
+            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+        }
+
+        $this->checkIncidentTime()
+            ->setToken()
+            ->checkIsTokenValid()
+            ->checkUserAgent()
+            ->checkTokenType($tokenType)
             ->checkTokenBlacklist()
             ->setAuthenticatedUser();
     }
@@ -132,12 +132,14 @@ abstract class BaseAuthenticateMiddleware
      * @return void
      * @throws InvalidIssuedUserAgent
      */
-    protected function checkUserAgent(): void
+    protected function checkUserAgent(): self
     {
         if (($iua = $this->jwtService->getRequestedIua()) !== $this->userAgent) {
             resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $iua);
             throw new InvalidIssuedUserAgent();
         }
+
+        return $this;
     }
 
 

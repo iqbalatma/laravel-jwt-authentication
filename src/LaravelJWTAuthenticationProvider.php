@@ -36,7 +36,6 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
                 return new JWTCertKey(config("jwt.jwt_passphrase"));
             }
 
-
             if (config("jwt.secret")){
                 return new JWTSecretKey();
             }
@@ -53,6 +52,8 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             $jwtService = $app->make(JWTService::class);
             return new JWTBlacklistService($jwtService);
         });
+
+        Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }
 
     /**
@@ -76,6 +77,5 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             $userProvider = Auth::createUserProvider($config["provider"]);
             return new JWTGuard($jwtService, $userProvider, $app[Dispatcher::class]);
         });
-        Route::aliasMiddleware("auth.jwt", Authenticate::class);
     }
 }
