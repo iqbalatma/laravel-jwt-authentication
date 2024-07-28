@@ -13,7 +13,7 @@ use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateCertCommand;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\KeyNotAvailableException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
-use Iqbalatma\LaravelJwtAuthentication\Middleware\Authenticate;
+use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTCertKey;
@@ -29,6 +29,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . "/Config/jwt.php" => config_path("jwt.php")
         ], "config");
+
         $this->mergeConfigFrom(__DIR__ . '/Config/jwt.php', 'jwt');
 
         $this->app->singleton(JWTKey::class, function () {
@@ -53,7 +54,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTBlacklistService($jwtService);
         });
 
-        Route::aliasMiddleware("auth.jwt", Authenticate::class);
+        Route::aliasMiddleware("auth.jwt", AuthenticateMiddleware::class);
     }
 
     /**

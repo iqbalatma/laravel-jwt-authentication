@@ -129,7 +129,7 @@ abstract class BaseAuthenticateMiddleware
 
 
     /**
-     * @return void
+     * @return BaseAuthenticateMiddleware
      * @throws InvalidIssuedUserAgent
      */
     protected function checkUserAgent(): self
