@@ -33,9 +33,8 @@ abstract class BaseJWTService
     {
         $this->accessTokenTTL = config("jwt.access_token_ttl");
         $this->refreshTTL = config("jwt.refresh_token_ttl");
-        $this->userAgent = request()->userAgent();
-        if (!$this->userAgent) {
-            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+        if (!($this->userAgent = request()->userAgent())) {
+            throw new MissingRequiredHeaderException();
         }
     }
 
@@ -54,7 +53,7 @@ abstract class BaseJWTService
             'iat' => $now,
             'exp' => $now,
             'nbf' => $now,
-            'jti' => Str::random(),
+            'jti' => Str::uuid(),
             'sub' => null,
             'iua' => $this->userAgent
         ];

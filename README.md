@@ -34,6 +34,18 @@ php artisan vendor:publish --provider='Iqbalatma\LaravelJwtAuthentication\Larave
 
 ***
 
+## Generate JWT Credentials
+This credential is used for sign jwt token and make sure the token is valid
+```shell
+php artisan jwt:secret
+```
+or using pairs of public and secret key
+```shell
+php artisan jwt:generate-certs
+```
+
+***
+
 ## Configuration config/auth.php
 
 ```php
@@ -51,6 +63,8 @@ php artisan vendor:publish --provider='Iqbalatma\LaravelJwtAuthentication\Larave
     ]
 ],
 ```
+
+***
 
 ## Configuration config/jwt.php
 Jwt signin using public and private key is first priority, so if you define private and public key, jwt will be signing using this key pairs.
@@ -160,13 +174,14 @@ But if you do not define private and public key, jwt will use secret key for sig
     */
     'refresh_token_ttl' => env('JWT_REFRESH_TTL', 60 * 60 * 24 * 7),
 ```
+***
 
-## Configuration config/jwt.php
+## Implement JWTSubject
 You need to implement Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject on User model.
 If you would like to add another additional data on jwt claim, you can return array on getJWTCustomClaims
 ```php
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-class User extends Authenticatable implements  JWTSubject
+class User extends Authenticatable implements JWTSubject
 {
     public function getJWTIdentifier(): string|int
     {
@@ -178,18 +193,6 @@ class User extends Authenticatable implements  JWTSubject
         return [];
     }
 }
-```
-
-***
-
-## Generate JWT Credentials
-This credential is used for sign jwt token and make sure the token is valid
-```shell
-php artisan jwt:secret
-```
-or using pairs of public and secret key
-```shell
-php artisan jwt:generate-certs
 ```
 
 ***
