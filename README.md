@@ -14,6 +14,8 @@ This is the lists of next feature
 - [x] Add information on config jwt_iqbal
 - [x] Rename config from jwt_iqbal into jwt
 - [x] Rename guard from jwt-iqbal into jwt
+- [] Implement testing
+- [] Implement multi blacklist driver
 ***
 
 ## How To Install
@@ -193,6 +195,37 @@ class User extends Authenticatable implements JWTSubject
         return [];
     }
 }
+```
+***
+
+## How to use middleware ?
+When you are doing authentication, you will receive 2 types token, access and refresh.
+Access token use to get protected resource, for example get data product, add new data user, etc.
+Access token has shorter ttl, so when access token expired, you can regenerate new token
+with refresh token. Endpoint that do refresh token must be protected by middleware type refresh. 
+You can see the example on how to implement this middleware bellow
+```php
+use Illuminate\Support\Facades\Route;
+
+//jwt middleware that need refresh token
+Route::post("refresh-token", function (){
+    //do refresh logic here
+})->middleware("auth.jwt:refresh");
+
+
+//jwt middleware that need access token
+Route::middleware("auth.jwt")->group(function () {
+    Route::get("user", function () {
+        return response()->json([
+            "success" => true,
+            "user" => Auth::user()
+        ]);
+    });
+    
+    // and others route
+});
+
+
 ```
 
 ***
