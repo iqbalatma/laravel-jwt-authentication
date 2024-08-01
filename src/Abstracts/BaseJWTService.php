@@ -19,7 +19,7 @@ abstract class BaseJWTService
 
     public const LATEST_INCIDENT_TIME_KEY = "jwt.latest_incident_date_time";
 
-    protected string|null $userAgent;
+    protected string $userAgent;
     protected int $accessTokenTTL;
     protected int $refreshTTL;
     protected array $payload;
@@ -33,9 +33,10 @@ abstract class BaseJWTService
     {
         $this->accessTokenTTL = config("jwt.access_token_ttl");
         $this->refreshTTL = config("jwt.refresh_token_ttl");
-        if (!($this->userAgent = request()->userAgent())) {
+        if (!($userAgent = request()?->userAgent())) {
             throw new MissingRequiredHeaderException();
         }
+        $this->userAgent = $userAgent;
     }
 
 
@@ -45,9 +46,8 @@ abstract class BaseJWTService
     protected function setDefaultPayload(): void
     {
         $now = time();
-        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
-            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
-        }
+        self::checkIncidentTime();
+
         $this->payload = [
             'iss' => url()->current(),
             'iat' => $now,
@@ -166,7 +166,7 @@ abstract class BaseJWTService
     {
         if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
             $now = time();
-            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now);
+            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
         }
     }
 }

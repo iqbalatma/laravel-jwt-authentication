@@ -2,8 +2,6 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Auth;
@@ -39,13 +37,14 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
                 return new JWTCertKey(config("jwt.jwt_passphrase"));
             }
 
-            if (config("jwt.secret")){
+            if (config("jwt.secret")) {
                 return new JWTSecretKey();
             }
 
             throw new KeyNotAvailableException();
         });
 
+        #check user agent when access by curl
         $this->app->singleton(JWTService::class, function (Application $app) {
             $jwtKey = $app->make(JWTKey::class);
             return new JWTService($jwtKey);
@@ -70,15 +69,18 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
                 JWTGenerateCertCommand::class,
             ]);
         }
+
         /**
          * app is container
          * name is guard name
          * config contain driver-name and provider
          */
         Auth::extend("jwt", static function (Application $app, string $name, array $config) {
-            $jwtService = $app->make(JWTService::class);
-            $userProvider = Auth::createUserProvider($config["provider"]);
-            return new JWTGuard($jwtService, $userProvider, $app[Dispatcher::class]);
+            return new JWTGuard(
+                $app->make(JWTService::class),
+                Auth::createUserProvider($config["provider"]),
+                $app[Dispatcher::class]
+            );
         });
     }
 }

@@ -100,7 +100,7 @@ class AuthenticateMiddleware
      */
     protected function checkTokenType(string $tokenType): self
     {
-        if (in_array(strtolower($tokenType), TokenType::values(), true)) {
+        if (!in_array(strtolower($tokenType), TokenType::values(), true)) {
             throw new InvalidTokenTypeException();
         }
 
@@ -127,7 +127,6 @@ class AuthenticateMiddleware
 
         return $this;
     }
-
 
 
     /**

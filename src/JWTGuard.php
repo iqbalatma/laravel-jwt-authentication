@@ -2,19 +2,44 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
+use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTGuard;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Contracts\Events\Dispatcher;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
 /**
+ * @description this class is call when you are calling via Auth facade
  * @method static attempt()
  */
-class JWTGuard extends BaseJWTGuard
+class JWTGuard implements Guard
 {
+    use GuardHelpers, AuthEventTrait;
+
+    protected Authenticatable|null $lastAttempted;
+    protected $name = 'iqbalatma.jwt';
+    protected string|null $accessToken;
+    protected string|null $refreshToken;
+
+    public function __construct(
+        protected JWTService $jwtService,
+        UserProvider         $provider,
+        protected Dispatcher $events
+    )
+    {
+        $this->provider = $provider;
+        $this->accessToken = null;
+        $this->refreshToken = null;
+    }
+
+
     /**
      * @return Authenticatable|null
      */
@@ -43,10 +68,9 @@ class JWTGuard extends BaseJWTGuard
     public function attempt(array $credentials, bool $isGetToken = true): bool|array
     {
         $this->lastAttempted = $user = $this->provider->retrieveByCredentials($credentials);
-
         $this->fireAttemptEvent($credentials);
 
-        $validated = $user !== null && $this->provider->validateCredentials($user, $credentials);
+        $validated = !is_null($user) && $this->provider->validateCredentials($user, $credentials);
         if ($validated) {
             $this->setUser($user);
             $this->fireValidatedEvent($user);
@@ -106,9 +130,10 @@ class JWTGuard extends BaseJWTGuard
     {
         $sub = $this->jwtService->getRequestedSub();
         $type = $this->jwtService->getRequestedType();
-        $userAgent = request()->userAgent();
+        $userAgent = request()?->userAgent();
 
-        $this->jwtService->setIssuedToken($sub)
+        $this->jwtService
+            ->setIssuedToken($sub)
             ->blacklistToken($type, $userAgent);
     }
 
