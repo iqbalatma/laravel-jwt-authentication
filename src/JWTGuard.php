@@ -41,9 +41,9 @@ class JWTGuard implements Guard
 
 
     /**
-     * @return Authenticatable|null
+     * @return Authenticatable|JWTSubject|null
      */
-    public function user(): Authenticatable|null
+    public function user(): Authenticatable|JWTSubject|null
     {
         return $this->user ?? null;
     }
@@ -128,13 +128,12 @@ class JWTGuard implements Guard
      */
     public function revokeCurrentToken(): void
     {
-        $sub = $this->jwtService->getRequestedSub();
-        $type = $this->jwtService->getRequestedType();
-        $userAgent = request()?->userAgent();
-
         $this->jwtService
-            ->setIssuedToken($sub)
-            ->blacklistToken($type, $userAgent);
+            ->setIssuedToken($this->jwtService->getRequestedSub())
+            ->blacklistToken(
+                $this->jwtService->getRequestedType(),
+                $this->jwtService->getRequestedIua()
+            );
     }
 
 

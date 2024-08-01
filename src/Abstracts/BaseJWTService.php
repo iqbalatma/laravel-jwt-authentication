@@ -61,21 +61,6 @@ abstract class BaseJWTService
 
 
     /**
-     * @param Authenticatable $authenticatable
-     * @return JWTService
-     * @throws ModelNotCompatibleWithJWTSubjectException
-     */
-    protected function checkAuthenticatableContracts(Authenticatable $authenticatable): self
-    {
-        if (!$authenticatable instanceof JWTSubject) {
-            throw new ModelNotCompatibleWithJWTSubjectException();
-        }
-
-        return $this;
-    }
-
-
-    /**
      * @return string
      */
     public function getRequestedIss(): string
@@ -145,18 +130,6 @@ abstract class BaseJWTService
 
 
     /**
-     * @param string|null $key
-     * @return string|array
-     */
-    abstract public function getRequestedTokenPayloads(null|string $key = null): string|array;
-
-    /**
-     * @param string|null $key
-     * @return string|array
-     */
-    abstract public function getRequestTokenHeaders(null|string $key = null): string|array;
-
-    /**
      * first initiate last incident time
      * this use when redis data is reset, but you already invoke many token,
      * you can invalidate all issued token, and make user re-logged in
@@ -169,4 +142,17 @@ abstract class BaseJWTService
             Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
         }
     }
+
+
+    /**
+     * @param string|null $key
+     * @return string|array
+     */
+    abstract public function getRequestedTokenPayloads(null|string $key = null): string|array;
+
+    /**
+     * @param string|null $key
+     * @return string|array
+     */
+    abstract public function getRequestTokenHeaders(null|string $key = null): string|array;
 }
