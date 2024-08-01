@@ -45,7 +45,7 @@ class JWTSecretKey implements JWTKey
             throw new MissingRequiredAlgorithm();
         }
         if (!in_array($algo, self::AVAILABLE_ALGO, true)) {
-            throw new InvalidActionException("Algorithm is not supported");
+            throw new InvalidActionException("Algorithm $algo is not supported");
         }
         return $algo;
     }

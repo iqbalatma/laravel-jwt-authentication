@@ -32,6 +32,8 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
 
         $this->mergeConfigFrom(__DIR__ . '/Config/jwt.php', 'jwt');
 
+        #check key generator command
+        #check environment writer command
         $this->app->singleton(JWTKey::class, function () {
             if (config("jwt.jwt_public_key") && config("jwt.jwt_private_key")) {
                 return new JWTCertKey(config("jwt.jwt_passphrase"));
