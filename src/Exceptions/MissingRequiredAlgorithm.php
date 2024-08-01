@@ -7,7 +7,7 @@ use Throwable;
 
 class MissingRequiredAlgorithm extends Exception
 {
-    public function __construct(string $message = "You are not set algorithm yet", int $code = 0, ?Throwable $previous = null)
+    public function __construct(string $message = "You are not set jwt algorithm yet", int $code = 0, ?Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }

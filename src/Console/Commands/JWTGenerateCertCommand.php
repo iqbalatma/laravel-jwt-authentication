@@ -41,7 +41,7 @@ class JWTGenerateCertCommand extends Command
         $this->info("============= GENERATING JWT CERT ===============");
 
         $force = $this->option('force');
-        $directory = $this->option('dir') ? $this->option('dir') : 'storage/certs';
+        $directory = $this->option('dir') ? $this->option('dir') : 'storage/app/certs';
         $algo = $this->option('algo') ? $this->option('algo') : 'rsa';
         $bits = $this->option('bits') ? (int)$this->option('bits') : 4096;
         $shaVariant = $this->option('sha') ? (int)$this->option('sha') : 512;
@@ -106,7 +106,9 @@ class JWTGenerateCertCommand extends Command
 
         // save certificates to disk
         if (false === is_dir($directory)) {
-            mkdir($directory, 0777, true);
+            if (!mkdir($directory, 0777, true) && !is_dir($directory)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $directory));
+            }
         }
 
         file_put_contents($filenamePrivate, $privKey);

@@ -14,7 +14,8 @@
     "require": {
         "firebase/php-jwt": "^6.9",
         "archtechx/enums" :  "^1.0.0",
-        "ext-openssl": "*"
+        "ext-openssl": "*",
+        "php": "^8.2"
     },
     "extra": {
         "laravel": {

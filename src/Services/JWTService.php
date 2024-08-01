@@ -4,27 +4,23 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Illuminate\Contracts\Auth\Authenticatable;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use RuntimeException;
 use stdClass;
 
 class JWTService extends BaseJWTService
 {
     /**
-     * @param Authenticatable $authenticatable
+     * @param JWTSubject $authenticatable
      * @return string
      * @throws InvalidActionException
-     * @throws ModelNotCompatibleWithJWTSubjectException
      */
-    public function generateAccessToken(Authenticatable $authenticatable): string
+    public function generateAccessToken(JWTSubject $authenticatable): string
     {
-        $this->checkAuthenticatableContracts($authenticatable)
-            ->setDefaultPayload();
-
+        $this->setDefaultPayload();
 
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->accessTokenTTL,
@@ -40,14 +36,13 @@ class JWTService extends BaseJWTService
 
 
     /**
-     * @param Authenticatable $authenticatable
+     * @param JWTSubject $authenticatable
      * @return string
-     * @throws ModelNotCompatibleWithJWTSubjectException|InvalidActionException
+     * @throws InvalidActionException
      */
-    public function generateRefreshToken(Authenticatable $authenticatable): string
+    public function generateRefreshToken(JWTSubject $authenticatable): string
     {
-        $this->checkAuthenticatableContracts($authenticatable)
-            ->setDefaultPayload();
+        $this->setDefaultPayload();
 
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->refreshTTL,

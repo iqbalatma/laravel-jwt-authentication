@@ -19,7 +19,7 @@ abstract class BaseJWTService
 
     public const LATEST_INCIDENT_TIME_KEY = "jwt.latest_incident_date_time";
 
-    protected string|null $userAgent;
+    protected string $userAgent;
     protected int $accessTokenTTL;
     protected int $refreshTTL;
     protected array $payload;
@@ -33,10 +33,10 @@ abstract class BaseJWTService
     {
         $this->accessTokenTTL = config("jwt.access_token_ttl");
         $this->refreshTTL = config("jwt.refresh_token_ttl");
-        $this->userAgent = request()->userAgent();
-        if (!$this->userAgent) {
-            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+        if (!($userAgent = request()?->userAgent())) {
+            throw new MissingRequiredHeaderException();
         }
+        $this->userAgent = $userAgent;
     }
 
 
@@ -46,33 +46,17 @@ abstract class BaseJWTService
     protected function setDefaultPayload(): void
     {
         $now = time();
-        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
-            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
-        }
+        self::checkIncidentTime();
+
         $this->payload = [
             'iss' => url()->current(),
             'iat' => $now,
             'exp' => $now,
             'nbf' => $now,
-            'jti' => Str::random(),
+            'jti' => Str::uuid(),
             'sub' => null,
             'iua' => $this->userAgent
         ];
-    }
-
-
-    /**
-     * @param Authenticatable $authenticatable
-     * @return JWTService
-     * @throws ModelNotCompatibleWithJWTSubjectException
-     */
-    protected function checkAuthenticatableContracts(Authenticatable $authenticatable): self
-    {
-        if (!$authenticatable instanceof JWTSubject) {
-            throw new ModelNotCompatibleWithJWTSubjectException();
-        }
-
-        return $this;
     }
 
 
@@ -142,6 +126,21 @@ abstract class BaseJWTService
     public function getRequestedType(): string
     {
         return $this->getRequestedTokenPayloads("type");
+    }
+
+
+    /**
+     * first initiate last incident time
+     * this use when redis data is reset, but you already invoke many token,
+     * you can invalidate all issued token, and make user re-logged in
+     * @return void
+     */
+    public static function checkIncidentTime(): void
+    {
+        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
+            $now = time();
+            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
+        }
     }
 
 
