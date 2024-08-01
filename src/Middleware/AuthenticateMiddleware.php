@@ -6,7 +6,6 @@ use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidIssuedUserAgent;
@@ -16,13 +15,12 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Traits\InteractWithRequest;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateMiddleware
 {
-    protected string $token;
-    protected string|null $userAgent;
-    protected int|null $incidentTime;
+    use InteractWithRequest;
 
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
@@ -41,8 +39,8 @@ class AuthenticateMiddleware
      */
     public function handle(Request $request, Closure $next, string $tokenType = TokenType::ACCESS->value): Response
     {
+        BaseJWTService::checkIncidentTime();
         $this->setUserAgent()
-            ->checkIncidentTime()
             ->setToken()
             ->checkIsTokenSignatureValid()
             ->checkUserAgent()
@@ -52,48 +50,6 @@ class AuthenticateMiddleware
         return $next($request);
     }
 
-
-    /**
-     * @return $this
-     * @throws MissingRequiredHeaderException
-     */
-    protected function setUserAgent():self
-    {
-        #check user agent
-        $this->userAgent = $this->request->userAgent();
-        if (!$this->userAgent) {
-            throw new MissingRequiredHeaderException("Missing required header User-Agent");
-        }
-        return $this;
-    }
-
-
-    /**
-     * @return self
-     */
-    protected function checkIncidentTime(): self
-    {
-        if (!($this->incidentTime = Cache::get(BaseJWTService::LATEST_INCIDENT_TIME_KEY))) {
-            $now = time();
-            Cache::forever(BaseJWTService::LATEST_INCIDENT_TIME_KEY, $now);
-            $this->incidentTime = $now;
-        }
-        return $this;
-    }
-
-    /**
-     * @return self
-     * @throws MissingRequiredTokenException
-     */
-    protected function setToken(): self
-    {
-        if (!$this->request->hasHeader("authorization")) {
-            throw new MissingRequiredTokenException();
-        }
-
-        $this->token = $this->request->bearerToken();
-        return $this;
-    }
 
     /**
      * @description check token signature and payload
@@ -113,6 +69,9 @@ class AuthenticateMiddleware
     }
 
     /**
+     * @description when token generate from user agent A
+     * but, when check token and user send it from user agent B
+     * we will throw InvalidIssuedUserAgent and blacklist that token
      * @return AuthenticateMiddleware
      * @throws InvalidIssuedUserAgent
      */
@@ -141,7 +100,7 @@ class AuthenticateMiddleware
      */
     protected function checkTokenType(string $tokenType): self
     {
-        if (strtolower($tokenType) !== TokenType::ACCESS->value && strtolower($tokenType) !== TokenType::REFRESH->value) {
+        if (in_array(strtolower($tokenType), TokenType::values(), true)) {
             throw new InvalidTokenTypeException();
         }
 
@@ -162,7 +121,7 @@ class AuthenticateMiddleware
      */
     protected function checkTokenBlacklist(): self
     {
-        if (resolve(JWTBlacklistService::class)->isTokenBlacklisted($this->incidentTime)) {
+        if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
             throw new InvalidTokenException();
         }
 

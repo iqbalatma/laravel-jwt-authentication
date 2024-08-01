@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
@@ -35,12 +36,15 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfa
 
 
     /**
-     * @param int $incidentTime
+     * @param int|null $incidentTime
      * @return bool
      * @throws InvalidActionException
      */
-    public function isTokenBlacklisted(int $incidentTime): bool
+    public function isTokenBlacklisted(int $incidentTime = null): bool
     {
+        if (is_null($incidentTime)){
+            $incidentTime = Cache::get(BaseJWTService::LATEST_INCIDENT_TIME_KEY);
+        }
         $cachePrefix = JWTService::$JWT_CACHE_KEY_PREFIX;
 
 

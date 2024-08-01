@@ -155,4 +155,18 @@ abstract class BaseJWTService
      * @return string|array
      */
     abstract public function getRequestTokenHeaders(null|string $key = null): string|array;
+
+    /**
+     * first initiate last incident time
+     * this use when redis data is reset, but you already invoke many token,
+     * you can invalidate all issued token, and make user re-logged in
+     * @return void
+     */
+    public static function checkIncidentTime(): void
+    {
+        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
+            $now = time();
+            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now);
+        }
+    }
 }
