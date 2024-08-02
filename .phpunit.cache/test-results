@@ -1,0 +1,1 @@
+{"version":1,"defects":{"Test\\SampleTest::test_that_true_is_true":7},"times":{"Test\\SampleTest::testRecaptchaValidationPassesWithValidResponse":0.039,"Test\\SampleTest::test_that_true_is_true":0.033}}

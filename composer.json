@@ -5,6 +5,11 @@
             "Iqbalatma\\LaravelJwtAuthentication\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Test\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Iqbal Atma Muliawan",
@@ -16,6 +21,10 @@
         "archtechx/enums" :  "^1.0.0",
         "ext-openssl": "*",
         "php": "^8.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.3",
+        "orchestra/testbench": "^9.2"
     },
     "extra": {
         "laravel": {
