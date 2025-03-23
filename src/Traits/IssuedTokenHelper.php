@@ -6,7 +6,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 
 trait IssuedTokenHelper
@@ -23,13 +23,13 @@ trait IssuedTokenHelper
     /**
      * @param string|int|null $subjectId
      * @return BaseJWTService|IssuedTokenHelper
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function setIssuedToken(string|int|null $subjectId = null): self
     {
         $this->subjectId = $subjectId ?: Auth::id();
         if (!$this->subjectId) {
-            throw new InvalidActionException("Subject id cannot be null");
+            throw new JWTInvalidActionException("Subject id cannot be null");
         }
 
         $this->issuedTokens = Cache::get(self::$JWT_CACHE_KEY_PREFIX . ".$this->subjectId") ?? collect();

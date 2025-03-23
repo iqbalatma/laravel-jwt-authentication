@@ -5,7 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Exceptions;
 use Exception;
 use Throwable;
 
-class InvalidActionException extends Exception
+class JWTInvalidActionException extends Exception
 {
     public function __construct(string $message = "Your action is invalid", int $code = 0, ?Throwable $previous = null)
     {

@@ -4,7 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Illuminate\Support\Collection;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 
 class IssuedTokenService
 {
@@ -24,7 +24,7 @@ class IssuedTokenService
     /**
      * @param string|int|null $subjectId
      * @return Collection
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function getAllToken(string|int|null $subjectId = null): Collection
     {
@@ -40,7 +40,7 @@ class IssuedTokenService
     /**
      * @param string|int|null $subjectId
      * @return Collection
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function getAllTokenRefresh(string|int|null $subjectId = null): Collection
     {
@@ -56,7 +56,7 @@ class IssuedTokenService
     /**
      * @param string|int|null $subjectId
      * @return Collection
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function getAllTokenAccess(string|int|null $subjectId = null): Collection
     {
@@ -73,7 +73,7 @@ class IssuedTokenService
      * @param string $userAgent
      * @param string|int|null $subjectId
      * @return IssuedTokenService
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function revokeTokenRefreshByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
@@ -90,7 +90,7 @@ class IssuedTokenService
      * @param string $userAgent
      * @param string|int|null $subjectId
      * @return IssuedTokenService
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function revokeTokenAccessByUserAgent(string $userAgent, string|int|null $subjectId = null): IssuedTokenService
     {
@@ -108,7 +108,7 @@ class IssuedTokenService
      * @param string $userAgent
      * @param string|int|null $subjectId
      * @return void
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function revokeTokenByUserAgent(string $userAgent, string|int|null $subjectId = null): void
     {
@@ -120,7 +120,7 @@ class IssuedTokenService
     /**
      * @param string|int|null $subjectId
      * @return IssuedTokenService
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function revokeAllToken(string|int|null $subjectId = null): IssuedTokenService
     {
@@ -140,7 +140,7 @@ class IssuedTokenService
     /**
      * @param string|int|null $subjectId
      * @return IssuedTokenService
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public static function revokeAllTokenOnOtherUserAgent(string|int|null $subjectId = null): IssuedTokenService
     {

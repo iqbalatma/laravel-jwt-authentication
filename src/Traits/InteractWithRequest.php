@@ -2,8 +2,8 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
 
 trait InteractWithRequest
@@ -16,14 +16,14 @@ trait InteractWithRequest
      * @param string|null $userAgent
      * @param bool $isRequired
      * @return InteractWithRequest|AuthenticateMiddleware
-     * @throws MissingRequiredHeaderException
+     * @throws JWTMissingRequiredHeaderException
      */
     protected function setUserAgent(string $userAgent = null, bool $isRequired = true): self
     {
         #check user agent
         if (is_null($userAgent)) {
             if (!($userAgent = $this->request->userAgent()) && $isRequired) {
-                throw new MissingRequiredHeaderException("Missing required header User-Agent");
+                throw new JWTMissingRequiredHeaderException("Missing required header User-Agent");
             }
         }
         $this->userAgent = $userAgent;
@@ -34,13 +34,13 @@ trait InteractWithRequest
 
     /**
      * @return InteractWithRequest
-     * @throws MissingRequiredTokenException
+     * @throws JWTMissingRequiredTokenException
      */
     protected function setToken(string $token = null, bool $isRequired = true): self
     {
         if (is_null($token)) {
             if (!$this->request->hasHeader("authorization") && $isRequired) {
-                throw new MissingRequiredTokenException();
+                throw new JWTMissingRequiredTokenException();
             }
             $this->token = $this->request->bearerToken();
         }else{

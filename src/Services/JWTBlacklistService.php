@@ -7,8 +7,8 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 
 class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService
 {
@@ -25,7 +25,7 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
     {
         $this->userAgent = request()->userAgent();
         if (!$this->userAgent) {
-            throw new MissingRequiredHeaderException("Missing required header User-Agent");
+            throw new JWTMissingRequiredHeaderException("Missing required header User-Agent");
         }
 
         $this->exp = $this->jwtService->getRequestedExp();
@@ -38,7 +38,7 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
     /**
      * @param int|null $incidentTime
      * @return bool
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function isTokenBlacklisted(int $incidentTime = null): bool
     {
@@ -95,7 +95,7 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
      * @param bool $isBlacklistBothToken
      * @param string|null $userAgent
      * @return void
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {

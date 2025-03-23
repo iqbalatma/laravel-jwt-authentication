@@ -5,7 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
 use stdClass;
 
@@ -23,14 +23,14 @@ abstract class BaseJWTService
     protected stdClass $requestTokenHeaders;
 
     /**
-     * @throws MissingRequiredHeaderException
+     * @throws JWTMissingRequiredHeaderException
      */
     public function __construct(protected JWTKey $jwtKey)
     {
         $this->accessTokenTTL = config("jwt.access_token_ttl");
         $this->refreshTTL = config("jwt.refresh_token_ttl");
         if (!($userAgent = request()?->userAgent())) {
-            throw new MissingRequiredHeaderException();
+            throw new JWTMissingRequiredHeaderException();
         }
         $this->userAgent = $userAgent;
     }

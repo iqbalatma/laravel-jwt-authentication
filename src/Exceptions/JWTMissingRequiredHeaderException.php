@@ -5,7 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Exceptions;
 use Exception;
 use Throwable;
 
-class MissingRequiredHeaderException extends Exception
+class JWTMissingRequiredHeaderException extends Exception
 {
     public function __construct(string $message = "Your request is missing required header", int $code = 0, ?Throwable $previous = null)
     {

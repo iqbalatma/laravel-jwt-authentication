@@ -7,7 +7,7 @@ use Firebase\JWT\Key;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use RuntimeException;
 use stdClass;
 
@@ -16,7 +16,7 @@ class JWTService extends BaseJWTService
     /**
      * @param JWTSubject $authenticatable
      * @return string
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function generateAccessToken(JWTSubject $authenticatable): string
     {
@@ -38,7 +38,7 @@ class JWTService extends BaseJWTService
     /**
      * @param JWTSubject $authenticatable
      * @return string
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function generateRefreshToken(JWTSubject $authenticatable): string
     {

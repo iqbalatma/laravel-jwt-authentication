@@ -9,9 +9,9 @@ use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
@@ -58,7 +58,7 @@ class JWTGuard implements Guard
     /**
      * @param array $credentials
      * @return bool
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
      * @throws ModelNotCompatibleWithJWTSubjectException
      */
@@ -72,7 +72,7 @@ class JWTGuard implements Guard
      * @param array $credentials
      * @param bool $isGetToken
      * @return bool|array
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
     public function attempt(array $credentials, bool $isGetToken = true): bool|array
@@ -115,7 +115,7 @@ class JWTGuard implements Guard
      * @param JWTSubject|null $user
      * @return void
      * @throws JWTEntityDoesNotExistsException
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function login(JWTSubject|null $user): void
     {
@@ -132,7 +132,7 @@ class JWTGuard implements Guard
     /**
      * #logout will invalidate current user token
      * @return void
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
     public function logout(): void
     {
@@ -150,8 +150,8 @@ class JWTGuard implements Guard
      * @param JWTSubject|null $user
      * @return array
      * @throws Exceptions\EntityDoesNotExistsException
-     * @throws InvalidActionException
-     * @throws InvalidTokenTypeException
+     * @throws JWTInvalidActionException
+     * @throws JWTInvalidTokenTypeException
      * @throws JWTEntityDoesNotExistsException
      * @throws JWTUnauthenticatedUserException
      * @throws ModelNotCompatibleWithJWTSubjectException
@@ -159,7 +159,7 @@ class JWTGuard implements Guard
     public function refreshToken(JWTSubject|null $user): array
     {
         if ($this->jwtService->getRequestedType() !== TokenTypeDeprecated::REFRESH->value) {
-            throw new InvalidTokenTypeException("Refresh token only can be done using refresh token type authorization");
+            throw new JWTInvalidTokenTypeException("Refresh token only can be done using refresh token type authorization");
         }
 
         if (!$user) {
