@@ -5,7 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 

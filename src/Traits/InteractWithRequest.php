@@ -2,15 +2,9 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication\Traits;
 
-use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Cache;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
-use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 
 trait InteractWithRequest
 {
@@ -21,7 +15,7 @@ trait InteractWithRequest
     /**
      * @param string|null $userAgent
      * @param bool $isRequired
-     * @return InteractWithRequest
+     * @return InteractWithRequest|AuthenticateMiddleware
      * @throws MissingRequiredHeaderException
      */
     protected function setUserAgent(string $userAgent = null, bool $isRequired = true): self

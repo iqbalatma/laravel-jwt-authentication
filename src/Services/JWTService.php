@@ -4,10 +4,10 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use RuntimeException;
 use stdClass;
 
@@ -25,11 +25,11 @@ class JWTService extends BaseJWTService
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->accessTokenTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => TokenType::ACCESS->value,
+            "type" => TokenTypeDeprecated::ACCESS->value,
         ], $authenticatable->getJWTCustomClaims());
 
         $this->setIssuedToken($authenticatable->getAuthIdentifier())
-            ->blacklistToken(TokenType::ACCESS->value, $this->userAgent, false);
+            ->blacklistToken(TokenTypeDeprecated::ACCESS->value, $this->userAgent, false);
 
         return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
     }
@@ -47,11 +47,11 @@ class JWTService extends BaseJWTService
         $payload = array_merge($this->payload, [
             "exp" => $this->payload["exp"] + $this->refreshTTL,
             "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => TokenType::REFRESH->value,
+            "type" => TokenTypeDeprecated::REFRESH->value,
         ], $authenticatable->getJWTCustomClaims());
 
         $this->setIssuedToken($authenticatable->getAuthIdentifier())
-            ->blacklistToken(TokenType::REFRESH->value, $this->userAgent, false);
+            ->blacklistToken(TokenTypeDeprecated::REFRESH->value, $this->userAgent, false);
 
         return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
     }
@@ -77,6 +77,10 @@ class JWTService extends BaseJWTService
      */
     public function getRequestedTokenPayloads(null|string $key = null): string|array
     {
+        if (!isset($this->requestTokenPayloads)) {
+            throw new RuntimeException("Token payloads are not set.");
+        }
+
         if ($key) {
             if (isset($this->requestTokenPayloads[$key])) {
                 return $this->requestTokenPayloads[$key];

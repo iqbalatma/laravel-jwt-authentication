@@ -5,12 +5,12 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 
-class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService
+class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService
 {
     public string $iat;
     public string $exp;
@@ -102,8 +102,8 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfa
         $this->jwtService->setIssuedToken($this->sub);
 
         if ($isBlacklistBothToken) {
-            $this->jwtService->blacklistToken(TokenType::REFRESH->value, $userAgent ?? $this->userAgent);
-            $this->jwtService->blacklistToken(TokenType::ACCESS->value, $userAgent ?? $this->userAgent);
+            $this->jwtService->blacklistToken(TokenTypeDeprecated::REFRESH->value, $userAgent ?? $this->userAgent);
+            $this->jwtService->blacklistToken(TokenTypeDeprecated::ACCESS->value, $userAgent ?? $this->userAgent);
         } else {
             $this->jwtService->blacklistToken($this->tokenType, $userAgent ?? $this->userAgent);
         }

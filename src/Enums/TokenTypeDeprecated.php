@@ -4,7 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Enums;
 
 use ArchTech\Enums\Values;
 
-enum TokenType:string
+enum TokenTypeDeprecated:string
 {
     use Values;
     case ACCESS = "access";

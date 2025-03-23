@@ -3,7 +3,7 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Illuminate\Support\Collection;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
 
 class IssuedTokenService
@@ -48,7 +48,7 @@ class IssuedTokenService
         $instance->jwtService->setIssuedToken($subjectId);
 
         return $instance->jwtService->issuedTokens->filter(function ($item) {
-            return $item["type"] === TokenType::REFRESH->value && $item["is_blacklisted"] === false;
+            return $item["type"] === TokenTypeDeprecated::REFRESH->value && $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -64,7 +64,7 @@ class IssuedTokenService
         $instance->jwtService->setIssuedToken($subjectId);
 
         return $instance->jwtService->issuedTokens->filter(function ($item) {
-            return $item["type"] === TokenType::ACCESS->value && $item["is_blacklisted"] === false;
+            return $item["type"] === TokenTypeDeprecated::ACCESS->value && $item["is_blacklisted"] === false;
         })->values();
     }
 
@@ -80,7 +80,7 @@ class IssuedTokenService
         $instance = self::build();
         $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->jwtService->updateIssuedToken(TokenType::REFRESH->value, $userAgent)
+        $instance->jwtService->updateIssuedToken(TokenTypeDeprecated::REFRESH->value, $userAgent)
             ->replaceIssuedTokenRecord();
 
         return $instance;
@@ -97,7 +97,7 @@ class IssuedTokenService
         $instance = self::build();
         $instance->jwtService->setIssuedToken($subjectId);
 
-        $instance->jwtService->updateIssuedToken(TokenType::ACCESS->value, $userAgent)
+        $instance->jwtService->updateIssuedToken(TokenTypeDeprecated::ACCESS->value, $userAgent)
             ->replaceIssuedTokenRecord();
 
         return $instance;

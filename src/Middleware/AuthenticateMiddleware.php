@@ -6,14 +6,14 @@ use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidIssuedUserAgent;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\InteractWithRequest;
 use Symfony\Component\HttpFoundation\Response;
@@ -37,7 +37,7 @@ class AuthenticateMiddleware
      * @throws MissingRequiredHeaderException
      * @throws MissingRequiredTokenException
      */
-    public function handle(Request $request, Closure $next, string $tokenType = TokenType::ACCESS->value): Response
+    public function handle(Request $request, Closure $next, string $tokenType = TokenTypeDeprecated::ACCESS->value): Response
     {
         BaseJWTService::checkIncidentTime();
         $this->setUserAgent()
@@ -100,7 +100,7 @@ class AuthenticateMiddleware
      */
     protected function checkTokenType(string $tokenType): self
     {
-        if (!in_array(strtolower($tokenType), TokenType::values(), true)) {
+        if (!in_array(strtolower($tokenType), TokenTypeDeprecated::values(), true)) {
             throw new InvalidTokenTypeException();
         }
 

@@ -1,15 +1,11 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Abstracts;
+namespace Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts;
 
-use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
 use stdClass;
 
