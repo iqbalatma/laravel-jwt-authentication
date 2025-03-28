@@ -3,27 +3,29 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidIssuedUserAgent;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidTokenTypeException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredHeaderException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredTokenException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidIssuedUserAgent;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredTokenException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
+use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
-use Iqbalatma\LaravelJwtAuthentication\Traits\InteractWithRequest;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateMiddleware
 {
-    use InteractWithRequest;
+    protected string|null $userAgentFromRequest;
+    protected string|null $tokenFromRequest;
 
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
+        $this->userAgentFromRequest = null;
+        $this->tokenFromRequest = null;
     }
 
     /**
@@ -31,15 +33,16 @@ class AuthenticateMiddleware
      * @param Closure $next
      * @param string $tokenType
      * @return Response
-     * @throws InvalidIssuedUserAgent
-     * @throws InvalidTokenException
-     * @throws InvalidTokenTypeException
-     * @throws MissingRequiredHeaderException
-     * @throws MissingRequiredTokenException
+     * @throws JWTInvalidIssuedUserAgent
+     * @throws JWTInvalidTokenException
+     * @throws JWTInvalidTokenTypeException
+     * @throws JWTMissingRequiredHeaderException
+     * @throws JWTMissingRequiredTokenException
+     * @throws JWTUnauthenticatedUserException
      */
-    public function handle(Request $request, Closure $next, string $tokenType = TokenType::ACCESS->value): Response
+    public function handle(Request $request, Closure $next, string $tokenType = JWTTokenType::ACCESS->name): Response
     {
-        BaseJWTService::checkIncidentTime();
+        IncidentTimeService::check();
         $this->setUserAgent()
             ->setToken()
             ->checkIsTokenSignatureValid()
@@ -47,7 +50,51 @@ class AuthenticateMiddleware
             ->checkTokenType($tokenType)
             ->checkTokenBlacklist()
             ->setAuthenticatedUser();
+
         return $next($request);
+    }
+
+    /**
+     * @param string|null $userAgent
+     * @return AuthenticateMiddleware
+     * @throws JWTMissingRequiredHeaderException
+     */
+    protected function setUserAgent(string|null $userAgent = null): self
+    {
+        if ($userAgent) {
+            $this->userAgentFromRequest = $userAgent;
+            return $this;
+        }
+
+        if (!$this->request->userAgent()) {
+            throw new JWTMissingRequiredHeaderException("Missing required header User-Agent");
+        }
+
+        $this->userAgentFromRequest = $this->request->userAgent();
+
+        return $this;
+    }
+
+
+    /**
+     * @param string|null $token
+     * @return AuthenticateMiddleware
+     * @throws JWTMissingRequiredTokenException
+     */
+    protected function setToken(string|null $token = null): self
+    {
+        if ($token) {
+            $this->tokenFromRequest = $token;
+            return $this;
+        }
+
+        if (!$this->request->hasHeader("authorization")) {
+            throw new JWTMissingRequiredTokenException("Missing required header Authorization");
+        }
+
+        $this->tokenFromRequest = $this->request->bearerToken();
+
+        return $this;
     }
 
 
@@ -55,33 +102,26 @@ class AuthenticateMiddleware
      * @description check token signature and payload
      * against secret key or openssl
      * @return AuthenticateMiddleware
-     * @throws InvalidTokenException
      */
     protected function checkIsTokenSignatureValid(): self
     {
-        try {
-            $this->jwtService->decodeJWT($this->token);
-        } catch (Exception $e) {
-            throw new InvalidTokenException();
-        }
-
+        $this->jwtService->decodeJWT($this->tokenFromRequest);
         return $this;
     }
 
     /**
      * @description when token generate from user agent A
      * but, when check token and user send it from user agent B
-     * we will throw InvalidIssuedUserAgent and blacklist that token
+     * we will throw JWTInvalidIssuedUserAgent and blacklist that token
      * @return AuthenticateMiddleware
-     * @throws InvalidIssuedUserAgent
+     * @throws JWTInvalidIssuedUserAgent
      */
     protected function checkUserAgent(): self
     {
-        if (($iua = $this->jwtService->getRequestedIua()) !== $this->userAgent) {
+        if (($iua = $this->jwtService->getRequestedIua()) !== $this->userAgentFromRequest) {
             resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $iua);
-            throw new InvalidIssuedUserAgent();
+            throw new JWTInvalidIssuedUserAgent();
         }
-
         return $this;
     }
 
@@ -91,24 +131,25 @@ class AuthenticateMiddleware
      * access, request will be rejected.
      * Every token has their own type, and this type will check
      * against middleware type that
-     * example: auth.jwt:refresh
-     * default type is access
+     * example: auth.jwt:REFRESH
+     * default type is ACCESS
      *
      * @param string $tokenType
      * @return AuthenticateMiddleware
-     * @throws InvalidTokenTypeException
+     * @throws JWTInvalidTokenTypeException
      */
     protected function checkTokenType(string $tokenType): self
     {
-        if (!in_array(strtolower($tokenType), TokenType::values(), true)) {
-            throw new InvalidTokenTypeException();
+        $tokenType = strtoupper($tokenType);
+        if (!in_array($tokenType, JWTTokenType::names(), true)) {
+            throw new JWTInvalidTokenTypeException();
         }
 
         /**
          * check condition when requested token type is different with middleware token type
          */
         if (($requestedTokenType = $this->jwtService->getRequestedType()) !== $tokenType) {
-            throw new InvalidTokenTypeException("This protected resource need token type $tokenType, and you provide $requestedTokenType");
+            throw new JWTInvalidTokenTypeException("This protected resource need token type $tokenType, and you provide $requestedTokenType");
         }
 
         return $this;
@@ -117,12 +158,12 @@ class AuthenticateMiddleware
 
     /**
      * @return self
-     * @throws InvalidTokenException
+     * @throws JWTInvalidTokenException
      */
     protected function checkTokenBlacklist(): self
     {
         if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
-            throw new InvalidTokenException();
+            throw new JWTInvalidTokenException();
         }
 
         return $this;
@@ -131,13 +172,13 @@ class AuthenticateMiddleware
 
     /**
      * @return void
-     * @throws InvalidTokenException
+     * @throws JWTUnauthenticatedUserException
      */
     protected function setAuthenticatedUser(): void
     {
         $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedSub());
         if (!$user) {
-            throw new InvalidTokenException("User of this token does not exists");
+            throw new JWTUnauthenticatedUserException("User of this token does not exists");
         }
         Auth::setUser($user);
     }

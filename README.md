@@ -210,11 +210,11 @@ use Illuminate\Support\Facades\Route;
 //jwt middleware that need refresh token
 Route::post("refresh-token", function (){
     //do refresh logic here
-})->middleware("auth.jwt:refresh");
+})->middleware("auth.jwt:REFRESH");
 
 
 //jwt middleware that need access token
-Route::middleware("auth.jwt")->group(function () {
+Route::middleware("auth.jwt:ACCESS")->group(function () {
     Route::get("user", function () {
         return response()->json([
             "success" => true,
@@ -291,9 +291,6 @@ $credentials = [
 ];
 
 Auth::attempt($credentials);
-
-Auth::getAccessToken();
-Auth::getRefreshToken();
 ```
 
 ## Issued Token Service
@@ -301,30 +298,31 @@ This is a service related to issued token, access or refresh token. You can get 
 
 ```php
 use Iqbalatma\LaravelJwtAuthentication\Services\IssuedTokenService;
+use Illuminate\Support\Facades\Auth;
 
 #use to get all issued token
-IssuedTokenService::getAllToken();
+IssuedTokenService::getAllToken(Auth::id());
 
 #use to get all issued refresh token
-IssuedTokenService::getAllTokenRefresh()
+IssuedTokenService::getAllRefreshToken(Auth::id())
 
 #use to get all issued access token
-IssuedTokenService::getAllTokenAccess();
+IssuedTokenService::getAllAccessToken(Auth::id());
 
 #use to revoke refresh token by user agent string name
-IssuedTokenService::revokeTokenRefreshByUserAgent('user-agent-name');
+IssuedTokenService::revokeRefreshTokenByUserAgent('user-agent-name', Auth::id());
 
 #use to revoke access token by user agent string name
-IssuedTokenService::revokeTokenAccessByUserAgent('user-agent-name');
+IssuedTokenService::revokeAccessTokenByUserAgent('user-agent-name', Auth::id());
 
 #use to revoke both access and refresh token by user agent string name
-IssuedTokenService::revokeTokenByUserAgent('user-agent-name');
+IssuedTokenService::revokeTokenByUserAgent('user-agent-name', Auth::id());
 
 #use to revoke all token
-IssuedTokenService::revokeAllToken();
+IssuedTokenService::revokeAllToken(Auth::id());
 
 #use to revoke all token but current token
-IssuedTokenService::revokeAllTokenOnOtherUserAgent();
+IssuedTokenService::revokeAllTokenOnOtherUserAgent(Auth::id());
 ```
 
 

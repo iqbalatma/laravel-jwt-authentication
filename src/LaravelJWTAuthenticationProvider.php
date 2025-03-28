@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateCertCommand;
 use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\KeyNotAvailableException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTKeyNotAvailableException;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
@@ -41,7 +41,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
                 return new JWTSecretKey();
             }
 
-            throw new KeyNotAvailableException();
+            throw new JWTKeyNotAvailableException();
         });
 
         #check user agent when access by curl
@@ -50,7 +50,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             return new JWTService($jwtKey);
         });
 
-        $this->app->bind(Interfaces\JWTBlacklistService::class, function (Application $app) {
+        $this->app->bind(Contracts\Interfaces\JWTBlacklistService::class, function (Application $app) {
             $jwtService = $app->make(JWTService::class);
             return new JWTBlacklistService($jwtService);
         });

@@ -7,11 +7,16 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\EntityDoesNotExistsException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\ModelNotCompatibleWithJWTSubjectException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTModelNotCompatibleWithJWTSubjectException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
+use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
+use Iqbalatma\LaravelJwtAuthentication\Services\IssuedTokenService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
@@ -24,6 +29,8 @@ class JWTGuard implements Guard
     use GuardHelpers, AuthEventTrait;
 
     protected Authenticatable|null $lastAttempted;
+
+    #used in AuthEventTrait
     protected $name = 'iqbalatma.jwt';
     protected string|null $accessToken;
     protected string|null $refreshToken;
@@ -35,22 +42,26 @@ class JWTGuard implements Guard
     )
     {
         $this->provider = $provider;
+        $this->user = null;
         $this->accessToken = null;
         $this->refreshToken = null;
     }
 
 
     /**
-     * @return Authenticatable|JWTSubject|null
+     * @return Authenticatable|null
      */
-    public function user(): Authenticatable|JWTSubject|null
+    public function user(): Authenticatable|null
     {
-        return $this->user ?? null;
+        return $this->user;
     }
 
 
     /**
-     * @throws ModelNotCompatibleWithJWTSubjectException|Exceptions\InvalidActionException
+     * @param array $credentials
+     * @return bool
+     * @throws JWTInvalidActionException
+     * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
     public function validate(array $credentials = []): bool
     {
@@ -59,29 +70,35 @@ class JWTGuard implements Guard
 
 
     /**
-     * Use to attempt login user using credentials
      * @param array $credentials
      * @param bool $isGetToken
-     * @return bool|string
-     * @throws ModelNotCompatibleWithJWTSubjectException|Exceptions\InvalidActionException
+     * @return bool|array
+     * @throws JWTInvalidActionException
+     * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
     public function attempt(array $credentials, bool $isGetToken = true): bool|array
     {
+        #this is last user that attempted via this guard
+        #this also retrieve user from db but not validated yet, just get the credential and password
         $this->lastAttempted = $user = $this->provider->retrieveByCredentials($credentials);
         $this->fireAttemptEvent($credentials);
 
+        #this validated existing user with their password
         $validated = !is_null($user) && $this->provider->validateCredentials($user, $credentials);
         if ($validated) {
-            $this->setUser($user);
-            $this->fireValidatedEvent($user);
+            $this->setUser($user)
+                ->fireValidatedEvent($user);
 
+            if (!($user instanceof JWTSubject)) {
+                throw new JWTModelNotCompatibleWithJWTSubjectException();
+            }
             if ($isGetToken) {
-                $this->accessToken = $this->jwtService->generateAccessToken($this->user());
-                $this->refreshToken = $this->jwtService->generateRefreshToken($this->user());
+                $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user);
+                $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
 
                 return [
-                    "access_token" => $this->getAccessToken(),
-                    "refresh_token" => $this->getRefreshToken(),
+                    "access_token" => $this->accessToken,
+                    "refresh_token" => $this->refreshToken,
                 ];
             }
 
@@ -95,70 +112,59 @@ class JWTGuard implements Guard
 
 
     /**
+     * @description login is mostly used for get token from user that query not by credential
      * @param JWTSubject|null $user
      * @return void
-     * @throws ModelNotCompatibleWithJWTSubjectException|EntityDoesNotExistsException|Exceptions\InvalidActionException
+     * @throws JWTEntityDoesNotExistsException
+     * @throws JWTInvalidActionException
      */
     public function login(JWTSubject|null $user): void
     {
         if (!$user) {
-            throw new EntityDoesNotExistsException("User does not exists !");
+            throw new JWTEntityDoesNotExistsException("User does not exists !");
         }
         $this->fireLoginEvent($user);
         $this->setUser($user);
-        $this->accessToken = $this->jwtService->generateAccessToken($user);
-        $this->refreshToken = $this->jwtService->generateRefreshToken($user);
+        $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user);
+        $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
     }
 
 
     /**
+     * #logout will invalidate current user token
      * @return void
-     * @throws InvalidActionException
      */
     public function logout(): void
     {
-        $this->revokeCurrentToken();
+        resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $this->jwtService->getRequestedIua());
         $this->user = null;
-    }
-
-
-    /**
-     * @return void
-     * @throws InvalidActionException
-     */
-    public function revokeCurrentToken(): void
-    {
-        $this->jwtService
-            ->setIssuedToken($this->jwtService->getRequestedSub())
-            ->blacklistToken(
-                $this->jwtService->getRequestedType(),
-                $this->jwtService->getRequestedIua()
-            );
     }
 
 
     /**
      * @param JWTSubject|null $user
      * @return array
-     * @throws EntityDoesNotExistsException
-     * @throws InvalidActionException
-     * @throws ModelNotCompatibleWithJWTSubjectException
+     * @throws JWTInvalidActionException
+     * @throws JWTInvalidTokenTypeException
+     * @throws JWTEntityDoesNotExistsException
+     * @throws JWTUnauthenticatedUserException
      */
     public function refreshToken(JWTSubject|null $user): array
     {
-        if ($this->jwtService->getRequestedType() !== TokenType::REFRESH->value) {
-            throw new InvalidActionException("Refresh token only can be done using refresh token type authorization");
+        if ($this->jwtService->getRequestedType() !== JWTTokenType::REFRESH->name) {
+            throw new JWTInvalidTokenTypeException("Refresh token only can be done using refresh token type authorization");
         }
 
         if (!$user) {
-            throw new InvalidActionException("Regenerate token failed. User is null");
+            throw new JWTUnauthenticatedUserException("Regenerate token failed. User is not defined");
         }
 
+        #this login already generate access token and refresh token so we can call access token and refresh token directly
         $this->login($user);
 
         return [
-            "access_token" => $this->getAccessToken(),
-            "refresh_token" => $this->getRefreshToken(),
+            "access_token" => $this->accessToken,
+            "refresh_token" => $this->refreshToken,
         ];
     }
 
@@ -171,23 +177,5 @@ class JWTGuard implements Guard
     public function getLastAttempted(): Authenticatable
     {
         return $this->lastAttempted;
-    }
-
-
-    /**
-     * @return string|null
-     */
-    public function getAccessToken(): string|null
-    {
-        return $this->accessToken;
-    }
-
-
-    /**
-     * @return string|null
-     */
-    public function getRefreshToken(): string|null
-    {
-        return $this->refreshToken;
     }
 }

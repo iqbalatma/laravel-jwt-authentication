@@ -4,54 +4,45 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenType;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use RuntimeException;
 use stdClass;
 
 class JWTService extends BaseJWTService
 {
     /**
-     * @param JWTSubject $authenticatable
+     * @param JWTTokenType $type
+     * @param JWTSubject $user
      * @return string
-     * @throws InvalidActionException
+     * @throws JWTInvalidActionException
      */
-    public function generateAccessToken(JWTSubject $authenticatable): string
+    public function generateToken(JWTTokenType $type, JWTSubject $user): string
     {
         $this->setDefaultPayload();
+        $ttl = $type === JWTTokenType::ACCESS ?
+            $this->accessTokenTTL : $this->refreshTokenTTL;
 
-        $payload = array_merge($this->payload, [
-            "exp" => $this->payload["exp"] + $this->accessTokenTTL,
-            "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => TokenType::ACCESS->value,
-        ], $authenticatable->getJWTCustomClaims());
-
-        $this->setIssuedToken($authenticatable->getAuthIdentifier())
-            ->blacklistToken(TokenType::ACCESS->value, $this->userAgent, false);
-
-        return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
-    }
+        $payload = array_merge(
+            $this->payload,
+            [
+                "exp" => $this->payload["exp"] + $ttl,
+                "sub" => $user->getAuthIdentifier(),
+                "type" => $type->name,
+            ],
+            $user->getJWTCustomClaims()
+        );
 
 
-    /**
-     * @param JWTSubject $authenticatable
-     * @return string
-     * @throws InvalidActionException
-     */
-    public function generateRefreshToken(JWTSubject $authenticatable): string
-    {
-        $this->setDefaultPayload();
+        #use to register generated token to issued token by subject collection
+        $issuedTokenService = IssuedTokenService::build()
+            ->setIssuedTokenCollection($user->getJWTIdentifier());
 
-        $payload = array_merge($this->payload, [
-            "exp" => $this->payload["exp"] + $this->refreshTTL,
-            "sub" => $authenticatable->getAuthIdentifier(),
-            "type" => TokenType::REFRESH->value,
-        ], $authenticatable->getJWTCustomClaims());
-
-        $this->setIssuedToken($authenticatable->getAuthIdentifier())
-            ->blacklistToken(TokenType::REFRESH->value, $this->userAgent, false);
+        $issuedTokenService->isExists($type, $this->userAgent) ?
+            $issuedTokenService->updateIssuedToken($type, $this->userAgent, false, $user->getJWTIdentifier()) :
+            $issuedTokenService->addNewIssuedToken($type, $this->userAgent, false, $user->getJWTIdentifier());
 
         return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
     }
@@ -65,8 +56,8 @@ class JWTService extends BaseJWTService
     {
         $headers = new stdClass();
         $this->requestTokenPayloads = (array)JWT::decode($token, new Key($this->jwtKey->getPublicKey(), $this->jwtKey->getAlgo()), $headers);
-
         $this->requestTokenHeaders = $headers;
+
         return $this->requestTokenPayloads;
     }
 
@@ -77,6 +68,10 @@ class JWTService extends BaseJWTService
      */
     public function getRequestedTokenPayloads(null|string $key = null): string|array
     {
+        if (!isset($this->requestTokenPayloads)) {
+            throw new RuntimeException("Token payloads are not set.");
+        }
+
         if ($key) {
             if (isset($this->requestTokenPayloads[$key])) {
                 return $this->requestTokenPayloads[$key];

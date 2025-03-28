@@ -2,14 +2,14 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication\Services\Keys;
 
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\InvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\MissingRequiredAlgorithm;
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredAlgorithmException;
 use OpenSSLAsymmetricKey;
 
 class JWTCertKey implements JWTKey
 {
-    private const AVAILABLE_ALGO = [
+    private const array AVAILABLE_ALGO = [
         "RS512",
         "RS256",
         "RS384",
@@ -49,16 +49,16 @@ class JWTCertKey implements JWTKey
 
     /**
      * @return string
-     * @throws InvalidActionException
-     * @throws MissingRequiredAlgorithm
+     * @throws JWTInvalidActionException
+     * @throws JWTMissingRequiredAlgorithmException
      */
     public function getAlgo(): string
     {
         if (empty($algo = config("jwt.algo"))) {
-            throw new MissingRequiredAlgorithm();
+            throw new JWTMissingRequiredAlgorithmException();
         }
         if (!in_array($algo, self::AVAILABLE_ALGO, true)) {
-            throw new InvalidActionException("Algorithm is not supported");
+            throw new JWTInvalidActionException("Algorithm is not supported");
         }
         return $algo;
     }

@@ -5,9 +5,9 @@ namespace Iqbalatma\LaravelJwtAuthentication\Exceptions;
 use Exception;
 use Throwable;
 
-class SubjectIdNullException extends Exception
+class JWTKeyNotAvailableException extends Exception
 {
-    public function __construct(string $message = "Your subject id is null", int $code = 0, ?Throwable $previous = null)
+    public function __construct(string $message = "Key not available", int $code = 0, ?Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }
