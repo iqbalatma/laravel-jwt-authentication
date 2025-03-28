@@ -5,8 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 use Exception;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Enums\TokenTypeDeprecated;
+use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 
@@ -42,10 +41,10 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
      */
     public function isTokenBlacklisted(int $incidentTime = null): bool
     {
-        if (is_null($incidentTime)){
-            $incidentTime = Cache::get(BaseJWTService::LATEST_INCIDENT_TIME_KEY);
+        if (is_null($incidentTime)) {
+            $incidentTime = IncidentTimeService::get();
         }
-        $cachePrefix = JWTService::$JWT_CACHE_KEY_PREFIX;
+        $cachePrefix = IssuedTokenService::$JWT_CACHE_KEY_PREFIX;
 
 
         /**
@@ -59,12 +58,13 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
             return true;
         }
 
+
         /**
          * this is the condition when cache record for this subject is not set,
          * so the token must be not blacklisted yet
-         * @var $issuedTokenBySubject Collection
+         * @var $issuedTokenCollection Collection
          */
-        if (!($issuedTokenBySubject = Cache::get("$cachePrefix.$this->sub"))) {
+        if (!($issuedTokenCollection = Cache::get("$cachePrefix.$this->sub"))) {
             Cache::forever("$cachePrefix.$this->sub", collect([]));
             return false;
         }
@@ -75,11 +75,11 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
          * because the valid token is when iat greater than blacklisted iat
          */
         if (
-            $issuedTokenBySubject->where("user_agent", $this->userAgent)
+            $issuedTokenCollection->where("user_agent", $this->userAgent)
                 ->where('type', $this->tokenType)
                 ->where('iat', ">", $this->iat)
                 ->first() ||
-            $issuedTokenBySubject->where("user_agent", $this->userAgent)
+            $issuedTokenCollection->where("user_agent", $this->userAgent)
                 ->where('type', $this->tokenType)
                 ->where("is_blacklisted", true)
                 ->first()
@@ -99,13 +99,24 @@ class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contrac
      */
     public function blacklistToken(bool $isBlacklistBothToken = false, string|null $userAgent = null): void
     {
-        $this->jwtService->setIssuedToken($this->sub);
+        $issuedTokenService = IssuedTokenService::build()
+            ->setIssuedTokenCollection($this->sub);
 
+        $userAgent = $userAgent ?? $this->userAgent;
         if ($isBlacklistBothToken) {
-            $this->jwtService->blacklistToken(TokenTypeDeprecated::REFRESH->value, $userAgent ?? $this->userAgent);
-            $this->jwtService->blacklistToken(TokenTypeDeprecated::ACCESS->value, $userAgent ?? $this->userAgent);
+            $issuedTokenService->isExists(JWTTokenType::REFRESH, $userAgent) ?
+                $issuedTokenService->updateIssuedToken(JWTTokenType::REFRESH, $userAgent) :
+                $issuedTokenService->addNewIssuedToken(JWTTokenType::REFRESH, $userAgent);
+
+            $issuedTokenService->isExists(JWTTokenType::ACCESS, $userAgent) ?
+                $issuedTokenService->updateIssuedToken(JWTTokenType::ACCESS, $userAgent) :
+                $issuedTokenService->addNewIssuedToken(JWTTokenType::ACCESS, $userAgent);
         } else {
-            $this->jwtService->blacklistToken($this->tokenType, $userAgent ?? $this->userAgent);
+            $issuedTokenService->isExists(JWTTokenType::{$this->tokenType}, $userAgent) ?
+                $issuedTokenService->updateIssuedToken(JWTTokenType::{$this->tokenType}, $userAgent) :
+                $issuedTokenService->addNewIssuedToken(JWTTokenType::{$this->tokenType}, $userAgent);
         }
+
+        $issuedTokenService->refreshIssuedTokenCollection($this->sub);
     }
 }

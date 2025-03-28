@@ -2,22 +2,18 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts;
 
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
-use Iqbalatma\LaravelJwtAuthentication\Traits\IssuedTokenHelper;
+use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
 use stdClass;
 
 abstract class BaseJWTService
 {
-    use IssuedTokenHelper;
-
-    public const LATEST_INCIDENT_TIME_KEY = "jwt.latest_incident_date_time";
 
     protected string $userAgent;
     protected int $accessTokenTTL;
-    protected int $refreshTTL;
+    protected int $refreshTokenTTL;
     protected array $payload;
     protected array $requestTokenPayloads;
     protected stdClass $requestTokenHeaders;
@@ -28,31 +24,33 @@ abstract class BaseJWTService
     public function __construct(protected JWTKey $jwtKey)
     {
         $this->accessTokenTTL = config("jwt.access_token_ttl");
-        $this->refreshTTL = config("jwt.refresh_token_ttl");
+        $this->refreshTokenTTL = config("jwt.refresh_token_ttl");
         if (!($userAgent = request()?->userAgent())) {
-            throw new JWTMissingRequiredHeaderException();
+            throw new JWTMissingRequiredHeaderException("Your request is missing user-agent required header");
         }
         $this->userAgent = $userAgent;
     }
 
 
     /**
-     * @return void
+     * @return BaseJWTService
      */
-    protected function setDefaultPayload(): void
+    protected function setDefaultPayload(): self
     {
         $now = time();
-        self::checkIncidentTime();
+        IncidentTimeService::check();
 
         $this->payload = [
-            'iss' => url()->current(),
-            'iat' => $now,
-            'exp' => $now,
-            'nbf' => $now,
-            'jti' => Str::uuid(),
-            'sub' => null,
-            'iua' => $this->userAgent
+            'iss' => url()->current(), #issuer : the one who issue this token
+            'iat' => $now, #issued at : epoch time when this token is issued
+            'exp' => $now, #expired at : epoch time when this token is expired, cannot use anymore
+            'nbf' => $now, #not valid before : epoch time when this token is start to valid
+            'jti' => Str::uuid(), #json token identifier : this is unique identifier to this token
+            'sub' => null, #subject : who is the owner of this token
+            'iua' => $this->userAgent #issued user agent : user agent that call this token to issued
         ];
+
+        return $this;
     }
 
 
@@ -123,22 +121,6 @@ abstract class BaseJWTService
     {
         return $this->getRequestedTokenPayloads("type");
     }
-
-
-    /**
-     * first initiate last incident time
-     * this use when redis data is reset, but you already invoke many token,
-     * you can invalidate all issued token, and make user re-logged in
-     * @return void
-     */
-    public static function checkIncidentTime(): void
-    {
-        if (!Cache::get(self::LATEST_INCIDENT_TIME_KEY)) {
-            $now = time();
-            Cache::forever(self::LATEST_INCIDENT_TIME_KEY, $now - 1);
-        }
-    }
-
 
     /**
      * @param string|null $key
