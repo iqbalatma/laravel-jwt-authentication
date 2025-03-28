@@ -152,11 +152,11 @@ class IssuedTokenService
 
 
     /**
-     * @param string|int|null $subjectId
+     * @param string|int $subjectId
      * @return Collection
      * @throws JWTInvalidActionException
      */
-    public static function getAllAccessToken(string|int|null $subjectId = null): Collection
+    public static function getAllAccessToken(string|int $subjectId): Collection
     {
         $service = self::build();
         $service->setIssuedTokenCollection($subjectId);
@@ -204,11 +204,11 @@ class IssuedTokenService
 
     /**
      * @param string $userAgent
-     * @param string|int|null $subjectId
+     * @param string|int $subjectId
      * @return void
      * @throws JWTInvalidActionException
      */
-    public static function revokeTokenByUserAgent(string $userAgent, string|int $subjectId = null): void
+    public static function revokeTokenByUserAgent(string $userAgent, string|int $subjectId): void
     {
         self::revokeRefreshTokenByUserAgent($userAgent, $subjectId);
         self::revokeAccessTokenByUserAgent($userAgent, $subjectId);
@@ -236,11 +236,11 @@ class IssuedTokenService
     }
 
     /**
-     * @param string|int|null $subjectId
+     * @param string|int $subjectId
      * @return IssuedTokenService
      * @throws JWTInvalidActionException
      */
-    public static function revokeAllTokenOnOtherUserAgent(string|int|null $subjectId = null): IssuedTokenService
+    public static function revokeAllTokenOnOtherUserAgent(string|int $subjectId): IssuedTokenService
     {
         $service = self::build();
         $service->setIssuedTokenCollection($subjectId);
