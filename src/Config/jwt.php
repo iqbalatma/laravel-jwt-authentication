@@ -68,6 +68,8 @@ return [
     | This is TTL (Time To Life) for access token. When token is expired, the token
     | is already invalid. Access token using to access protected resource.
     | Middleware that can accept this token is auth.jwt:access
+    | This TTL is in seconds
+    | Default 1 Hour
     |
     */
     'access_token_ttl' => env('JWT_TTL', 60 * 60),
@@ -82,7 +84,33 @@ return [
     | is already invalid. Refresh token using to regenerate access token and refresh token
     | and revoke previous access token and refresh token.
     | Middleware that can accept this token is auth.jwt:refresh
-    |
+    | This TTL is in seconds
+    | Default 7 Days
     */
     'refresh_token_ttl' => env('JWT_REFRESH_TTL', 60 * 60 * 24 * 7),
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh Token
+    |--------------------------------------------------------------------------
+    |
+    | Refresh token mechanism is how middleware check/get your refresh token
+    | there are two options (cookie / header)
+    |
+    |
+    | Refresh token key is key to get when middleware mechanism choose cookie, so this key
+    | is used to get cookie to set refresh token
+    |
+    */
+    'refresh_token' => [
+        'mechanism' => 'cookie', //cookie/header
+        'key' => 'jwt_refresh_token',
+        'http_only' => true,
+        'path' => "/",
+        'domain' => null,
+        'secure' => true,
+        'same_site' => 'lax',
+    ]
 ];

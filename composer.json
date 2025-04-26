@@ -3,7 +3,10 @@
     "autoload": {
         "psr-4": {
             "Iqbalatma\\LaravelJwtAuthentication\\": "src/"
-        }
+        },
+        "files":[
+            "src/helper.php"
+        ]
     },
     "authors": [
         {

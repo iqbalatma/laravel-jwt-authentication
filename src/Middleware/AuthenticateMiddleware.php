@@ -5,6 +5,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidIssuedUserAgent;
@@ -42,9 +43,13 @@ class AuthenticateMiddleware
      */
     public function handle(Request $request, Closure $next, string $tokenType = JWTTokenType::ACCESS->name): Response
     {
+        $tokenType = strtoupper($tokenType);
+        if (!in_array($tokenType, JWTTokenType::names(), true)) {
+            throw new JWTInvalidTokenTypeException();
+        }
         IncidentTimeService::check();
         $this->setUserAgent()
-            ->setToken()
+            ->setToken($tokenType)
             ->checkIsTokenSignatureValid()
             ->checkUserAgent()
             ->checkTokenType($tokenType)
@@ -77,22 +82,39 @@ class AuthenticateMiddleware
 
 
     /**
+     * @param string $tokenType
      * @param string|null $token
      * @return AuthenticateMiddleware
      * @throws JWTMissingRequiredTokenException
      */
-    protected function setToken(string|null $token = null): self
+    protected function setToken(string $tokenType, string|null $token = null): self
     {
         if ($token) {
             $this->tokenFromRequest = $token;
             return $this;
         }
 
-        if (!$this->request->hasHeader("authorization")) {
-            throw new JWTMissingRequiredTokenException("Missing required header Authorization");
-        }
+        if ($tokenType === JWTTokenType::ACCESS->name) {
+            if (!$this->request->hasHeader("authorization")) {
+                throw new JWTMissingRequiredTokenException("Missing required header Authorization");
+            }
 
-        $this->tokenFromRequest = $this->request->bearerToken();
+            $this->tokenFromRequest = $this->request->bearerToken();
+        } else {
+            if (getJWTRefreshTokenMechanism() === 'cookie') {
+                if (!($jwtRefreshToken = Cookie::get(config("jwt.refresh_token.key")))) {
+                    throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+                }
+
+                $this->tokenFromRequest = $jwtRefreshToken;
+            } else {
+                if (!$this->request->hasHeader("authorization")) {
+                    throw new JWTMissingRequiredTokenException("Missing required header Authorization");
+                }
+
+                $this->tokenFromRequest = $this->request->bearerToken();
+            }
+        }
 
         return $this;
     }
@@ -140,11 +162,6 @@ class AuthenticateMiddleware
      */
     protected function checkTokenType(string $tokenType): self
     {
-        $tokenType = strtoupper($tokenType);
-        if (!in_array($tokenType, JWTTokenType::names(), true)) {
-            throw new JWTInvalidTokenTypeException();
-        }
-
         /**
          * check condition when requested token type is different with middleware token type
          */
