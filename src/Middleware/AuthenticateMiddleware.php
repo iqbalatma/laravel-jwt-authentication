@@ -3,6 +3,7 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
+use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -80,6 +81,24 @@ class AuthenticateMiddleware
         return $this;
     }
 
+    /**
+     * @param $token
+     * @return bool
+     */
+    private function isJWT($token):bool {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return false;
+        }
+
+        list($header, $payload, $signature) = $parts;
+
+        $isBase64Url = function ($str) {
+            return preg_match('/^[A-Za-z0-9\-_]+$/', $str);
+        };
+
+        return $isBase64Url($header) && $isBase64Url($payload) && $isBase64Url($signature);
+    }
 
     /**
      * @param string $tokenType
@@ -95,7 +114,7 @@ class AuthenticateMiddleware
         }
 
         if ($tokenType === JWTTokenType::ACCESS->name) {
-            if (!$this->request->hasHeader("authorization")) {
+            if (!$this->request->hasHeader("authorization") || $this->request->header("authorization") === null) {
                 throw new JWTMissingRequiredTokenException("Missing required header Authorization");
             }
 
@@ -116,6 +135,9 @@ class AuthenticateMiddleware
             }
         }
 
+        if (!$this->isJWT($this->tokenFromRequest)){
+            throw new JWTInvalidTokenException("Invalid token format");
+        }
         return $this;
     }
 
