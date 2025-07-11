@@ -219,6 +219,6 @@ class AuthenticateMiddleware
         if (!$user) {
             throw new JWTUnauthenticatedUserException("User of this token does not exists");
         }
-        Auth::setUser($user);
+        Auth::guard(config("jwt.refresh_token.key"))->setUser($user);
     }
 }
