@@ -29,12 +29,12 @@ if (!function_exists("getRefreshTokenTTLInMinutes")) {
 }
 
 
-if (!function_exists("getCreatedCookie")) {
+if (!function_exists("getCreatedCookieRefreshToken")) {
     /**
      * @param string $value
      * @return \Symfony\Component\HttpFoundation\Cookie
      */
-    function getCreatedCookie(string $value): \Symfony\Component\HttpFoundation\Cookie
+    function getCreatedCookieRefreshToken(string $value): \Symfony\Component\HttpFoundation\Cookie
     {
         return Cookie::make(
             name: config("jwt.refresh_token.key"),
@@ -51,4 +51,23 @@ if (!function_exists("getCreatedCookie")) {
 }
 
 
-
+if (!function_exists("getCreatedCookieAccessTokenVerifier")) {
+    /**
+     * @param string $value
+     * @return \Symfony\Component\HttpFoundation\Cookie
+     */
+    function getCreatedCookieAccessTokenVerifier(string $value): \Symfony\Component\HttpFoundation\Cookie
+    {
+        return Cookie::make(
+            name: config("jwt.access_token_verifier.key"),
+            value: $value,
+            minutes: getRefreshTokenTTLInMinutes(),
+            path: config("jwt.access_token_verifier.path"),
+            domain: config("jwt.access_token_verifier.domain"),
+            secure: config("jwt.access_token_verifier.secure"),
+            httpOnly: config("jwt.access_token_verifier.http_only"),
+            raw: false,
+            sameSite: config("jwt.access_token_verifier.same_site"),
+        );
+    }
+}
