@@ -3,12 +3,15 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
+use Exception;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTAccessTokenIssuerMismatchException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidIssuedUserAgent;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
@@ -41,6 +44,8 @@ class AuthenticateMiddleware
      * @throws JWTMissingRequiredHeaderException
      * @throws JWTMissingRequiredTokenException
      * @throws JWTUnauthenticatedUserException
+     * @throws JWTAccessTokenIssuerMismatchException
+     * @throws JWTInvalidActionException
      */
     public function handle(Request $request, Closure $next, string $tokenType = JWTTokenType::ACCESS->name): Response
     {
@@ -55,6 +60,7 @@ class AuthenticateMiddleware
             ->checkUserAgent()
             ->checkTokenType($tokenType)
             ->checkTokenBlacklist()
+            ->checkAccessTokenVerifier()
             ->setAuthenticatedUser();
 
         return $next($request);
@@ -85,7 +91,8 @@ class AuthenticateMiddleware
      * @param $token
      * @return bool
      */
-    private function isJWT($token):bool {
+    private function isJWT($token): bool
+    {
         $parts = explode('.', $token);
         if (count($parts) !== 3) {
             return false;
@@ -105,6 +112,7 @@ class AuthenticateMiddleware
      * @param string|null $token
      * @return AuthenticateMiddleware
      * @throws JWTMissingRequiredTokenException
+     * @throws JWTInvalidTokenException
      */
     protected function setToken(string $tokenType, string|null $token = null): self
     {
@@ -135,7 +143,7 @@ class AuthenticateMiddleware
             }
         }
 
-        if (!$this->isJWT($this->tokenFromRequest)){
+        if (!$this->isJWT($this->tokenFromRequest)) {
             throw new JWTInvalidTokenException("Invalid token format");
         }
         return $this;
@@ -150,6 +158,22 @@ class AuthenticateMiddleware
     protected function checkIsTokenSignatureValid(): self
     {
         $this->jwtService->decodeJWT($this->tokenFromRequest);
+        return $this;
+    }
+
+    /**
+     * @return $this
+     * @throws JWTAccessTokenIssuerMismatchException
+     * @throws JWTInvalidActionException
+     * @throws Exception
+     */
+    protected function checkAccessTokenVerifier(): self
+    {
+        if (config("jwt.is_using_access_token_verifier") && $this->jwtService->getRequestedAtv() !== Cookie::get("access_token_verifier")) {
+            (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->jwtService))->blacklistToken(true);
+            throw new JWTAccessTokenIssuerMismatchException();
+        }
+
         return $this;
     }
 

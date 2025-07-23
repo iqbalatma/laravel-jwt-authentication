@@ -47,7 +47,7 @@ abstract class BaseJWTService
             'nbf' => $now, #not valid before : epoch time when this token is start to valid
             'jti' => Str::uuid(), #json token identifier : this is unique identifier to this token
             'sub' => null, #subject : who is the owner of this token
-            'iua' => $this->userAgent #issued user agent : user agent that call this token to issued
+            'iua' => $this->userAgent, #issued user agent : user agent that call this token to issued,
         ];
 
         return $this;
@@ -111,6 +111,14 @@ abstract class BaseJWTService
     public function getRequestedIua(): string
     {
         return $this->getRequestedTokenPayloads("iua");
+    }
+
+    /**
+     * @return string
+     */
+    public function getRequestedAtv(): string
+    {
+        return $this->getRequestedTokenPayloads("atv");
     }
 
 

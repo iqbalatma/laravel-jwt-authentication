@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
@@ -96,9 +97,11 @@ class JWTGuard implements Guard
                 $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user);
                 $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
 
+
                 return [
                     "access_token" => $this->accessToken,
                     "refresh_token" => $this->refreshToken,
+                    "access_token_verifier" => $this->jwtService->decodeJWT($this->accessToken)["atv"]
                 ];
             }
 

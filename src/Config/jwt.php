@@ -1,7 +1,28 @@
 <?php
 
 return [
+    /*
+    |--------------------------------------------------------------------------
+    | JWT library guard
+    |--------------------------------------------------------------------------
+    |
+    | This is guard that set in auth, because inside library guard defined manually
+    | Auth::guard(config("jwt.guard"));
+    |
+    */
     "guard" => "jwt",
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Access token verifier
+    |--------------------------------------------------------------------------
+    |
+    | This is configuration to prevent xss attack by verified access token via cookie httpOnly
+    |
+    */
+    "is_using_access_token_verifier" => true,
+
     /*
     |--------------------------------------------------------------------------
     | JWT Sign in Algorithm
@@ -108,6 +129,15 @@ return [
     'refresh_token' => [
         'mechanism' => 'cookie', //cookie/header
         'key' => 'jwt_refresh_token',
+        'http_only' => true,
+        'path' => "/",
+        'domain' => null,
+        'secure' => true,
+        'same_site' => 'lax',
+    ],
+
+    'access_token_verifier' => [
+        'key' => 'access_token_verifier',
         'http_only' => true,
         'path' => "/",
         'domain' => null,

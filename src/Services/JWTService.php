@@ -4,6 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
@@ -31,6 +32,7 @@ class JWTService extends BaseJWTService
                 "exp" => $this->payload["exp"] + $ttl,
                 "sub" => $user->getAuthIdentifier(),
                 "type" => $type->name,
+                "atv" => $type->name === JWTTokenType::ACCESS->name ? Str::uuid() : null
             ],
             $user->getJWTCustomClaims()
         );
