@@ -8,6 +8,7 @@ use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\Hash;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTAccessTokenIssuerMismatchException;
@@ -169,7 +170,7 @@ class AuthenticateMiddleware
      */
     protected function checkAccessTokenVerifier(): self
     {
-        if (config("jwt.is_using_access_token_verifier") && $this->jwtService->getRequestedAtv() !== Cookie::get("access_token_verifier")) {
+        if ($this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name && config("jwt.is_using_access_token_verifier") && !Hash::check(Cookie::get("access_token_verifier"), $this->jwtService->getRequestedAtv())) {
             (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->jwtService))->blacklistToken(true);
             throw new JWTAccessTokenIssuerMismatchException();
         }
