@@ -4,6 +4,7 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
@@ -20,7 +21,7 @@ class JWTService extends BaseJWTService
      * @return string
      * @throws JWTInvalidActionException
      */
-    public function generateToken(JWTTokenType $type, JWTSubject $user): string
+    public function generateToken(JWTTokenType $type, JWTSubject $user, string|null $atv = null): string
     {
         $this->setDefaultPayload();
         $ttl = $type === JWTTokenType::ACCESS ?
@@ -32,7 +33,7 @@ class JWTService extends BaseJWTService
                 "exp" => $this->payload["exp"] + $ttl,
                 "sub" => $user->getAuthIdentifier(),
                 "type" => $type->name,
-                "atv" => $type->name === JWTTokenType::ACCESS->name ? Str::uuid() : null
+                "atv" => $type->name === JWTTokenType::ACCESS->name ? Hash::make($atv) : null
             ],
             $user->getJWTCustomClaims()
         );
@@ -78,7 +79,6 @@ class JWTService extends BaseJWTService
             if (isset($this->requestTokenPayloads[$key])) {
                 return $this->requestTokenPayloads[$key];
             }
-
             throw new RuntimeException("Undefined array key $key");
         }
 
