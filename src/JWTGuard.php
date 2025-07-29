@@ -35,6 +35,7 @@ class JWTGuard implements Guard
     protected $name = 'iqbalatma.jwt';
     protected string|null $accessToken;
     protected string|null $refreshToken;
+    protected string|null $accessTokenVerifier;
 
     public function __construct(
         protected JWTService $jwtService,
@@ -46,6 +47,7 @@ class JWTGuard implements Guard
         $this->user = null;
         $this->accessToken = null;
         $this->refreshToken = null;
+        $this->accessTokenVerifier = null;
     }
 
 
@@ -94,14 +96,15 @@ class JWTGuard implements Guard
                 throw new JWTModelNotCompatibleWithJWTSubjectException();
             }
             if ($isGetToken) {
-                $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user);
+                $this->accessTokenVerifier = Str::uuid();
+                $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user, $this->accessTokenVerifier);
                 $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
 
 
                 return [
                     "access_token" => $this->accessToken,
                     "refresh_token" => $this->refreshToken,
-                    "access_token_verifier" => $this->jwtService->decodeJWT($this->accessToken)["atv"]
+                    "access_token_verifier" => $this->accessTokenVerifier
                 ];
             }
 
@@ -128,7 +131,8 @@ class JWTGuard implements Guard
         }
         $this->fireLoginEvent($user);
         $this->setUser($user);
-        $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user);
+        $this->accessTokenVerifier = Str::uuid();
+        $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user, $this->accessTokenVerifier);
         $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
     }
 
@@ -168,6 +172,7 @@ class JWTGuard implements Guard
         return [
             "access_token" => $this->accessToken,
             "refresh_token" => $this->refreshToken,
+            "access_token_verifier" => $this->accessTokenVerifier
         ];
     }
 
