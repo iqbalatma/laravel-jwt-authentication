@@ -124,7 +124,7 @@ class JWTGuard implements Guard
      * @throws JWTEntityDoesNotExistsException
      * @throws JWTInvalidActionException
      */
-    public function login(JWTSubject|null $user): void
+    public function login(JWTSubject|null $user): array
     {
         if (!$user) {
             throw new JWTEntityDoesNotExistsException("User does not exists !");
@@ -134,6 +134,11 @@ class JWTGuard implements Guard
         $this->accessTokenVerifier = Str::uuid();
         $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user, $this->accessTokenVerifier);
         $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
+        return [
+            "access_token" => $this->accessToken,
+            "refresh_token" => $this->refreshToken,
+            "access_token_verifier" => $this->accessTokenVerifier
+        ];
     }
 
 
@@ -185,5 +190,29 @@ class JWTGuard implements Guard
     public function getLastAttempted(): Authenticatable
     {
         return $this->lastAttempted;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getRefreshToken():string|null
+    {
+        return $this->refreshToken;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getAccessToken():string|null
+    {
+        return $this->accessToken;
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getAccessTokenVerifier():string|null
+    {
+        return $this->accessTokenVerifier;
     }
 }
