@@ -1,42 +1,46 @@
 # Laravel JWT Authentication
-
 This is authentication for Laravel with JWT Based. Inspired by [tymondesigns/jwt-auth](https://github.com/tymondesigns/jwt-auth#documentation) and [PHP-Open-Source-Saver/jwt-auth](https://github.com/PHP-Open-Source-Saver/jwt-auth).
 This site was built using package from [firebase/php-jwt](https://github.com/firebase/php-jwt) for encode and decode JWT.
-
 ***
 
-## Next Feature
-This is the lists of next feature
-- [x] Using certificates on encode and decode JWT
-- [x] Create command console for generate certificates
-- [x] Set user on guard login
-- [x] Reset user on guard logout
-- [x] Add information on config jwt_iqbal
-- [x] Rename config from jwt_iqbal into jwt
-- [x] Rename guard from jwt-iqbal into jwt
-- [] Implement testing
-- [] Implement multi blacklist driver
-***
+
+
 
 ## How To Install
 This package using syntax and feature that only available on ***php version at least 8.0***
 
+### Install Via Composer
 ```shell
 composer require iqbalatma/laravel-jwt-authentication
 ```
 
-***
-
-## Publishing Asset
+### Publishing Asset
 You can publish asset for customization using this command
 
 ```shell
 php artisan vendor:publish --provider='Iqbalatma\LaravelJwtAuthentication\LaravelJWTAuthenticationProvider'
 ```
 
-***
+### Implement JWTSubject
+You need to implement Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject on User model.
+If you would like to add another additional data on jwt claim, you can return array on getJWTCustomClaims
+```php
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+class User extends Authenticatable implements JWTSubject
+{
+    public function getJWTIdentifier(): string|int
+    {
+        return $this->getKey();
+    }
 
-## Generate JWT Credentials
+    public function getJWTCustomClaims(): array
+    {
+        return [];
+    }
+}
+```
+
+### Generate JWT Credentials
 This credential is used for sign jwt token and make sure the token is valid
 ```shell
 php artisan jwt:secret
@@ -46,10 +50,7 @@ or using pairs of public and secret key
 php artisan jwt:generate-certs
 ```
 
-***
-
-## Configuration config/auth.php
-
+### Configuration config/auth.php
 ```php
 'defaults' => [
     'guard' => 'jwt',
@@ -65,13 +66,14 @@ php artisan jwt:generate-certs
     ]
 ],
 ```
-
 ***
+
+
+
 
 ## Configuration config/jwt.php
 Jwt signin using public and private key is first priority, so if you define private and public key, jwt will be signing using this key pairs.
 But if you do not define private and public key, jwt will use secret key for signing. If two type key does not exists, it will throw an error.
-
 
 > [!NOTE]
 > Here is available algorithm if you're using secret key
@@ -91,7 +93,31 @@ But if you do not define private and public key, jwt will use secret key for sig
   
 ```php
 <?php
-  /*
+
+return [
+    /*
+    |--------------------------------------------------------------------------
+    | JWT library guard
+    |--------------------------------------------------------------------------
+    |
+    | This is guard that set in auth, because inside library guard defined manually
+    | Auth::guard(config("jwt.guard"));
+    |
+    */
+    "guard" => "jwt",
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Access token verifier
+    |--------------------------------------------------------------------------
+    |
+    | This is configuration to prevent xss attack by verified access token via cookie httpOnly
+    |
+    */
+    "is_using_access_token_verifier" => true,
+
+    /*
     |--------------------------------------------------------------------------
     | JWT Sign in Algorithm
     |--------------------------------------------------------------------------
@@ -158,6 +184,8 @@ But if you do not define private and public key, jwt will use secret key for sig
     | This is TTL (Time To Life) for access token. When token is expired, the token
     | is already invalid. Access token using to access protected resource.
     | Middleware that can accept this token is auth.jwt:access
+    | This TTL is in seconds
+    | Default 1 Hour
     |
     */
     'access_token_ttl' => env('JWT_TTL', 60 * 60),
@@ -172,31 +200,62 @@ But if you do not define private and public key, jwt will use secret key for sig
     | is already invalid. Refresh token using to regenerate access token and refresh token
     | and revoke previous access token and refresh token.
     | Middleware that can accept this token is auth.jwt:refresh
-    |
+    | This TTL is in seconds
+    | Default 7 Days
     */
     'refresh_token_ttl' => env('JWT_REFRESH_TTL', 60 * 60 * 24 * 7),
+
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Refresh Token
+    |--------------------------------------------------------------------------
+    |
+    | Refresh token mechanism is how middleware check/get your refresh token
+    | there are two options (cookie / header)
+    |
+    |
+    | Refresh token key is key to get when middleware mechanism choose cookie, so this key
+    | is used to get cookie to set refresh token
+    |
+    */
+    'refresh_token' => [
+        'mechanism' => 'cookie', //cookie/header
+        'key' => 'jwt_refresh_token',
+        'http_only' => true,
+        'path' => "/",
+        'domain' => null,
+        'secure' => true,
+        'same_site' => 'lax',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Access Token Verifier
+    |--------------------------------------------------------------------------
+    |
+    | Access token verifier is used to prevent XSS attack by binding access token
+    | to this verifier, and make sure any stolen token cannot be used by attacker
+    |
+    |
+    */
+    'access_token_verifier' => [
+        'key' => 'access_token_verifier',
+        'http_only' => true,
+        'path' => "/",
+        'domain' => null,
+        'secure' => true,
+        'same_site' => 'lax',
+    ]
+];
 ```
 ***
 
-## Implement JWTSubject
-You need to implement Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject on User model.
-If you would like to add another additional data on jwt claim, you can return array on getJWTCustomClaims
-```php
-use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-class User extends Authenticatable implements JWTSubject
-{
-    public function getJWTIdentifier(): string|int
-    {
-        return $this->getKey();
-    }
 
-    public function getJWTCustomClaims(): array
-    {
-        return [];
-    }
-}
-```
-***
+
+
+
 
 ## How to use middleware ?
 When you are doing authentication, you will receive 2 types token, access and refresh.
@@ -227,8 +286,8 @@ Route::middleware("auth.jwt:ACCESS")->group(function () {
 
 
 ```
-
 ***
+
 
 ## How to use ?
 Here is some available method for authentication
@@ -246,8 +305,16 @@ $credentials = [
 #this attempt method will return boolean when user validation success
 Auth::attempt($credentials);
 
-#passing true on second parameter to get return array of access_token and refresh_token
+#passing true on second parameter to get return array of access_token, refresh_token, and access token
 Auth::attempt($credentials, true);
+
+#if you are using access token verifier by is_using_access_token_verifier = true, its mean you need to set 
+#access token in cookie httpOnly
+getCreatedCookieAccessTokenVerifier("put your access token verifier here");
+return response()->json([
+    "access_token" => "...",
+    "refresh_token" => "...",
+])->withCookie(getCreatedCookieAccessTokenVerifier("put your access token verifier here"));
 ```
 
 ### Logout User
@@ -290,7 +357,16 @@ $credentials = [
     "password" => "admin"
 ];
 
-Auth::attempt($credentials);
+$user = User::query()->where("email", "admin@mail.com")->find();
+Auth::attempt($credentials); 
+Auth::login($user);
+
+Auth::getAccessToken(); #to get access token
+Auth::getRefreshToken(); #to get refresh token
+Auth::getAccessTokenVerifier(); #to get access token verifier
+
+#if you are not using default guard, you need to specify the guard
+Auth::guard("jwt")->getAccessToken();
 ```
 
 ## Issued Token Service
