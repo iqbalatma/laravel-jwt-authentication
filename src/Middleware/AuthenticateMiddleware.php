@@ -170,7 +170,7 @@ class AuthenticateMiddleware
      */
     protected function checkAccessTokenVerifier(): self
     {
-        if ($this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name && config("jwt.is_using_access_token_verifier") && !Hash::check(Cookie::get("access_token_verifier"), $this->jwtService->getRequestedAtv())) {
+        if ($this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name && config("jwt.is_using_access_token_verifier") && !Hash::check(Cookie::get(config("jwt.access_token_verifier.key"),), $this->jwtService->getRequestedAtv())) {
             (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->jwtService))->blacklistToken(true);
             throw new JWTAccessTokenIssuerMismatchException();
         }

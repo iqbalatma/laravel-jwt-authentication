@@ -136,6 +136,19 @@ return [
         'same_site' => 'lax',
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Access token verifier is mecha
+    |--------------------------------------------------------------------------
+    |
+    | Refresh token mechanism is how middleware check/get your refresh token
+    | there are two options (cookie / header)
+    |
+    |
+    | Refresh token key is key to get when middleware mechanism choose cookie, so this key
+    | is used to get cookie to set refresh token
+    |
+    */
     'access_token_verifier' => [
         'key' => 'access_token_verifier',
         'http_only' => true,
