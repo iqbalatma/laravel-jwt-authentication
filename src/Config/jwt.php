@@ -138,15 +138,12 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Access token verifier is mecha
+    | Access Token Verifier
     |--------------------------------------------------------------------------
     |
-    | Refresh token mechanism is how middleware check/get your refresh token
-    | there are two options (cookie / header)
+    | Access token verifier is used to prevent XSS attack by binding access token
+    | to this verifier, and make sure any stolen token cannot be used by attacker
     |
-    |
-    | Refresh token key is key to get when middleware mechanism choose cookie, so this key
-    | is used to get cookie to set refresh token
     |
     */
     'access_token_verifier' => [
