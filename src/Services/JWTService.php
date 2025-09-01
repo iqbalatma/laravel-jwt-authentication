@@ -4,11 +4,12 @@ namespace Iqbalatma\LaravelJwtAuthentication\Services;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
-use Illuminate\Support\Facades\Hash;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts\BaseJWTService;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Abstracts\BaseJWTService;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Payload;
 use RuntimeException;
 use stdClass;
 
@@ -21,25 +22,18 @@ class JWTService extends BaseJWTService
      * @param bool $isUsingCookie
      * @return string
      * @throws JWTInvalidActionException
+     * @throws JWTMissingRequiredHeaderException
      */
     public function generateToken(JWTTokenType $type, JWTSubject $user, string|null $atv = null, bool $isUsingCookie = true): string
     {
-        $this->setDefaultPayload();
-        $ttl = $type === JWTTokenType::ACCESS ?
-            $this->accessTokenTTL : $this->refreshTokenTTL;
-
-        $payload = array_merge(
-            $this->payload,
-            [
-                "exp" => $this->payload["exp"] + $ttl,
-                "sub" => $user->getAuthIdentifier(),
-                "type" => $type->name,
-                "atv" => $type->name === JWTTokenType::ACCESS->name ? Hash::make($atv) : null,
-                "iuc" => $isUsingCookie
-            ],
-            $user->getJWTCustomClaims()
-        );
-
+        IncidentTimeService::check();
+        $this->payload = (new Payload($type))
+            ->addExpTTL($type === JWTTokenType::ACCESS ?
+                $this->accessTokenTTL : $this->refreshTokenTTL
+            )
+            ->setSub($user->getAuthIdentifier())
+            ->setIuc($isUsingCookie)
+            ->setAtv($atv);
 
         #use to register generated token to issued token by subject collection
         $issuedTokenService = IssuedTokenService::build()
@@ -49,7 +43,7 @@ class JWTService extends BaseJWTService
             $issuedTokenService->updateIssuedToken($type, $this->userAgent, false, $user->getJWTIdentifier()) :
             $issuedTokenService->addNewIssuedToken($type, $this->userAgent, false, $user->getJWTIdentifier());
 
-        return JWT::encode($payload, $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
+        return JWT::encode(array_merge($this->payload->toArray(), $user->getJWTCustomClaims()), $this->jwtKey->getPrivateKey(), $this->jwtKey->getAlgo());
     }
 
 

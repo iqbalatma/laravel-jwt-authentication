@@ -1,6 +1,6 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces;
+namespace Iqbalatma\LaravelJwtAuthentication\Interfaces;
 
 use OpenSSLAsymmetricKey;
 

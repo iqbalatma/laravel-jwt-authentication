@@ -1,6 +1,6 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Console\Commands;
+namespace Iqbalatma\LaravelJwtAuthentication\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;

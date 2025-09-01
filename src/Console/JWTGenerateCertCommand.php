@@ -1,9 +1,8 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Console\Commands;
+namespace Iqbalatma\LaravelJwtAuthentication\Console;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Traits\EnvHelper;
 
 class JWTGenerateCertCommand extends Command

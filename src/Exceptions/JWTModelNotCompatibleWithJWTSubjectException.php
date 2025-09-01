@@ -3,7 +3,7 @@
 namespace Iqbalatma\LaravelJwtAuthentication\Exceptions;
 
 use Exception;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Throwable;
 
 class JWTModelNotCompatibleWithJWTSubjectException extends Exception

@@ -2,9 +2,9 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication\Services\Keys;
 
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredAlgorithmException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 
 class JWTSecretKey implements JWTKey
 {

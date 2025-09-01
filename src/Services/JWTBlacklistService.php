@@ -9,7 +9,7 @@ use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 
-class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService
+class JWTBlacklistService implements \Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService
 {
     public string $iat;
     public string $exp;

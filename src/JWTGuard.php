@@ -8,14 +8,14 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Str;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTBlacklistService;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
@@ -64,9 +64,9 @@ class JWTGuard implements Guard
      * @throws JWTInvalidActionException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
-    public function validate(array $credentials = []): bool
+    public function validate(array $credentials = [], bool $isUsingCookie = true): bool
     {
-        return (bool)$this->attempt($credentials, false);
+        return (bool)$this->attempt(credentials: $credentials, isUsingCookie: $isUsingCookie, isGetToken: false);
     }
 
 
@@ -96,8 +96,17 @@ class JWTGuard implements Guard
             }
             if ($isGetToken) {
                 $this->accessTokenVerifier = Str::uuid();
-                $this->accessToken = $this->jwtService->generateToken(type: JWTTokenType::ACCESS, user: $user, atv: $this->accessTokenVerifier, isUsingCookie: $isUsingCookie);
-                $this->refreshToken = $this->jwtService->generateToken(type: JWTTokenType::REFRESH, user: $user, isUsingCookie: $isUsingCookie);
+                $this->accessToken = $this->jwtService->generateToken(
+                    type: JWTTokenType::ACCESS,
+                    user: $user,
+                    atv: $this->accessTokenVerifier,
+                    isUsingCookie: $isUsingCookie
+                );
+                $this->refreshToken = $this->jwtService->generateToken(
+                    type: JWTTokenType::REFRESH,
+                    user: $user,
+                    isUsingCookie: $isUsingCookie
+                );
 
 
                 return [

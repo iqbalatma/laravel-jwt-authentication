@@ -7,10 +7,10 @@ use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateCertCommand;
-use Iqbalatma\LaravelJwtAuthentication\Console\Commands\JWTGenerateSecretCommand;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Console\JWTGenerateCertCommand;
+use Iqbalatma\LaravelJwtAuthentication\Console\JWTGenerateSecretCommand;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTKeyNotAvailableException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
@@ -30,8 +30,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
 
         $this->mergeConfigFrom(__DIR__ . '/Config/jwt.php', 'jwt');
 
-        #check key generator command
-        #check environment writer command
+        #singleton JWTKey that can be used secret key or private/public key
         $this->app->singleton(JWTKey::class, function () {
             if (config("jwt.jwt_public_key") && config("jwt.jwt_private_key")) {
                 return new JWTCertKey(config("jwt.jwt_passphrase"));
@@ -44,17 +43,19 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             throw new JWTKeyNotAvailableException();
         });
 
-        #check user agent when access by curl
+        #singleton JWTService
         $this->app->singleton(JWTService::class, function (Application $app) {
             $jwtKey = $app->make(JWTKey::class);
             return new JWTService($jwtKey);
         });
 
-        $this->app->bind(Contracts\Interfaces\JWTBlacklistService::class, function (Application $app) {
+        #binding blacklist service
+        $this->app->bind(Interfaces\JWTBlacklistService::class, function (Application $app) {
             $jwtService = $app->make(JWTService::class);
             return new JWTBlacklistService($jwtService);
         });
 
+        #aliasing middleware
         Route::aliasMiddleware("auth.jwt", AuthenticateMiddleware::class);
     }
 
@@ -63,6 +64,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        #register command
         if ($this->app->runningInConsole()) {
             $this->commands([
                 JWTGenerateSecretCommand::class,
@@ -71,6 +73,7 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
         }
 
         /**
+         * extending guard
          * app is container
          * name is guard name
          * config contain driver-name and provider

@@ -1,10 +1,11 @@
 <?php
 
-namespace Iqbalatma\LaravelJwtAuthentication\Contracts\Abstracts;
+namespace Iqbalatma\LaravelJwtAuthentication\Abstracts;
 
 use Illuminate\Support\Str;
-use Iqbalatma\LaravelJwtAuthentication\Contracts\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
+use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
+use Iqbalatma\LaravelJwtAuthentication\Payload;
 use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
 use stdClass;
 
@@ -14,7 +15,7 @@ abstract class BaseJWTService
     protected string $userAgent;
     protected int $accessTokenTTL;
     protected int $refreshTokenTTL;
-    protected array $payload;
+    protected Payload $payload;
     protected array $requestTokenPayloads;
     protected stdClass $requestTokenHeaders;
 
@@ -29,29 +30,6 @@ abstract class BaseJWTService
             throw new JWTMissingRequiredHeaderException("Your request is missing user-agent required header");
         }
         $this->userAgent = $userAgent;
-    }
-
-
-    /**
-     * @return BaseJWTService
-     */
-    protected function setDefaultPayload(): self
-    {
-        $now = time();
-        IncidentTimeService::check();
-
-        $this->payload = [
-            'iss' => url()->current(), #issuer : the one who issue this token
-            'iat' => $now, #issued at : epoch time when this token is issued
-            'exp' => $now, #expired at : epoch time when this token is expired, cannot use anymore
-            'nbf' => $now, #not valid before : epoch time when this token is start to valid
-            'jti' => Str::uuid(), #json token identifier : this is unique identifier to this token
-            'sub' => null, #subject : who is the owner of this token
-            'iua' => $this->userAgent, #issued user agent : user agent that call this token to issued,
-            'iuc' => true
-        ];
-
-        return $this;
     }
 
 
@@ -131,7 +109,7 @@ abstract class BaseJWTService
         return $this->getRequestedTokenPayloads("type");
     }
 
-    public function getIsUsingCookie():bool
+    public function getIsUsingCookie(): bool
     {
         return $this->getRequestedTokenPayloads("iuc");
     }
