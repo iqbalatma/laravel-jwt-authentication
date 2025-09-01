@@ -4,7 +4,6 @@ namespace Iqbalatma\LaravelJwtAuthentication\Middleware;
 
 use Closure;
 use Exception;
-use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
@@ -27,11 +26,13 @@ class AuthenticateMiddleware
 {
     protected string|null $userAgentFromRequest;
     protected string|null $tokenFromRequest;
+    protected bool $isRefreshTokenFromHeader;
 
     public function __construct(protected JWTService $jwtService, protected readonly Request $request)
     {
         $this->userAgentFromRequest = null;
         $this->tokenFromRequest = null;
+        $this->isRefreshTokenFromHeader = false;
     }
 
     /**
@@ -131,10 +132,17 @@ class AuthenticateMiddleware
         } else {
             if (getJWTRefreshTokenMechanism() === 'cookie') {
                 if (!($jwtRefreshToken = Cookie::get(config("jwt.refresh_token.key")))) {
-                    throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+                    /** could be not using cookie (for mobile) that's why we get token from bearer and need to check iuc */
+                    $this->tokenFromRequest = $this->request->bearerToken();
+                    if (!$this->tokenFromRequest) {
+                        throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+                    }
+                    $this->isRefreshTokenFromHeader = true;
                 }
 
-                $this->tokenFromRequest = $jwtRefreshToken;
+                if ($jwtRefreshToken) {
+                    $this->tokenFromRequest = $jwtRefreshToken;
+                }
             } else {
                 if (!$this->request->hasHeader("authorization")) {
                     throw new JWTMissingRequiredTokenException("Missing required header Authorization");
@@ -143,7 +151,6 @@ class AuthenticateMiddleware
                 $this->tokenFromRequest = $this->request->bearerToken();
             }
         }
-
         if (!$this->isJWT($this->tokenFromRequest)) {
             throw new JWTInvalidTokenException("Invalid token format");
         }
@@ -155,10 +162,14 @@ class AuthenticateMiddleware
      * @description check token signature and payload
      * against secret key or openssl
      * @return AuthenticateMiddleware
+     * @throws JWTMissingRequiredTokenException
      */
     protected function checkIsTokenSignatureValid(): self
     {
         $this->jwtService->decodeJWT($this->tokenFromRequest);
+        if ($this->isRefreshTokenFromHeader && $this->jwtService->getIsUsingCookie()) {
+            throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+        }
         return $this;
     }
 
@@ -170,7 +181,12 @@ class AuthenticateMiddleware
      */
     protected function checkAccessTokenVerifier(): self
     {
-        if ($this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name && config("jwt.is_using_access_token_verifier") && !Hash::check(Cookie::get(config("jwt.access_token_verifier.key"),), $this->jwtService->getRequestedAtv())) {
+        if (
+            $this->jwtService->getIsUsingCookie() &&
+            $this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name &&
+            config("jwt.is_using_access_token_verifier") &&
+            !Hash::check(Cookie::get(config("jwt.access_token_verifier.key")), $this->jwtService->getRequestedAtv())
+        ) {
             (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->jwtService))->blacklistToken(true);
             throw new JWTAccessTokenIssuerMismatchException();
         }

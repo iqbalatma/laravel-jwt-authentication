@@ -16,8 +16,6 @@ use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsExceptio
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
-use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
-use Iqbalatma\LaravelJwtAuthentication\Services\IssuedTokenService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
@@ -74,12 +72,13 @@ class JWTGuard implements Guard
 
     /**
      * @param array $credentials
+     * @param bool $isUsingCookie
      * @param bool $isGetToken
      * @return bool|array
      * @throws JWTInvalidActionException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
-    public function attempt(array $credentials, bool $isGetToken = true): bool|array
+    public function attempt(array $credentials, bool $isUsingCookie = true, bool $isGetToken = true): bool|array
     {
         #this is last user that attempted via this guard
         #this also retrieve user from db but not validated yet, just get the credential and password
@@ -97,8 +96,8 @@ class JWTGuard implements Guard
             }
             if ($isGetToken) {
                 $this->accessTokenVerifier = Str::uuid();
-                $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user, $this->accessTokenVerifier);
-                $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
+                $this->accessToken = $this->jwtService->generateToken(type: JWTTokenType::ACCESS, user: $user, atv: $this->accessTokenVerifier, isUsingCookie: $isUsingCookie);
+                $this->refreshToken = $this->jwtService->generateToken(type: JWTTokenType::REFRESH, user: $user, isUsingCookie: $isUsingCookie);
 
 
                 return [
@@ -120,11 +119,12 @@ class JWTGuard implements Guard
     /**
      * @description login is mostly used for get token from user that query not by credential
      * @param JWTSubject|null $user
-     * @return void
+     * @param bool $isUsingCookie
+     * @return array
      * @throws JWTEntityDoesNotExistsException
      * @throws JWTInvalidActionException
      */
-    public function login(JWTSubject|null $user): array
+    public function login(JWTSubject|null $user, bool $isUsingCookie = true): array
     {
         if (!$user) {
             throw new JWTEntityDoesNotExistsException("User does not exists !");
@@ -132,8 +132,8 @@ class JWTGuard implements Guard
         $this->fireLoginEvent($user);
         $this->setUser($user);
         $this->accessTokenVerifier = Str::uuid();
-        $this->accessToken = $this->jwtService->generateToken(JWTTokenType::ACCESS, $user, $this->accessTokenVerifier);
-        $this->refreshToken = $this->jwtService->generateToken(JWTTokenType::REFRESH, $user);
+        $this->accessToken = $this->jwtService->generateToken(type: JWTTokenType::ACCESS, user: $user, atv: $this->accessTokenVerifier, isUsingCookie: $isUsingCookie);
+        $this->refreshToken = $this->jwtService->generateToken(type: JWTTokenType::REFRESH, user: $user, isUsingCookie: $isUsingCookie);
         return [
             "access_token" => $this->accessToken,
             "refresh_token" => $this->refreshToken,
@@ -155,13 +155,14 @@ class JWTGuard implements Guard
 
     /**
      * @param JWTSubject|null $user
+     * @param bool $isUsingCookie
      * @return array
+     * @throws JWTEntityDoesNotExistsException
      * @throws JWTInvalidActionException
      * @throws JWTInvalidTokenTypeException
-     * @throws JWTEntityDoesNotExistsException
      * @throws JWTUnauthenticatedUserException
      */
-    public function refreshToken(JWTSubject|null $user): array
+    public function refreshToken(JWTSubject|null $user, bool $isUsingCookie = true): array
     {
         if ($this->jwtService->getRequestedType() !== JWTTokenType::REFRESH->name) {
             throw new JWTInvalidTokenTypeException("Refresh token only can be done using refresh token type authorization");
@@ -172,7 +173,7 @@ class JWTGuard implements Guard
         }
 
         #this login already generate access token and refresh token so we can call access token and refresh token directly
-        $this->login($user);
+        $this->login($user, $isUsingCookie);
 
         return [
             "access_token" => $this->accessToken,
@@ -195,7 +196,7 @@ class JWTGuard implements Guard
     /**
      * @return string|null
      */
-    public function getRefreshToken():string|null
+    public function getRefreshToken(): string|null
     {
         return $this->refreshToken;
     }
@@ -203,7 +204,7 @@ class JWTGuard implements Guard
     /**
      * @return string|null
      */
-    public function getAccessToken():string|null
+    public function getAccessToken(): string|null
     {
         return $this->accessToken;
     }
@@ -211,7 +212,7 @@ class JWTGuard implements Guard
     /**
      * @return string|null
      */
-    public function getAccessTokenVerifier():string|null
+    public function getAccessTokenVerifier(): string|null
     {
         return $this->accessTokenVerifier;
     }
