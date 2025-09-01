@@ -48,6 +48,7 @@ abstract class BaseJWTService
             'jti' => Str::uuid(), #json token identifier : this is unique identifier to this token
             'sub' => null, #subject : who is the owner of this token
             'iua' => $this->userAgent, #issued user agent : user agent that call this token to issued,
+            'iuc' => true
         ];
 
         return $this;
@@ -128,6 +129,11 @@ abstract class BaseJWTService
     public function getRequestedType(): string
     {
         return $this->getRequestedTokenPayloads("type");
+    }
+
+    public function getIsUsingCookie():bool
+    {
+        return $this->getRequestedTokenPayloads("iuc");
     }
 
     /**
