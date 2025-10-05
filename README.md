@@ -315,6 +315,68 @@ return response()->json([
     "access_token" => "...",
     "refresh_token" => "...",
 ])->withCookie(getCreatedCookieAccessTokenVerifier("put your access token verifier here"));
+
+#full example
+public function authenticate(AuthenticateRequest $request): JsonResponse
+{
+    $credentials = request(['username', 'password']);
+    if (!$token = Auth::attempt($credentials)) {
+        return response()->json(
+            ["message" => "Invalid credentials."]
+        );
+    }
+
+    /** @var User $user */
+    $user = Auth::user();
+    /** @var User $user */
+    $user = Auth::user();
+    return response()->json(
+        [
+            "code" => "SUCCESS",
+            "message" => "Logged in successfully.",
+            "timestamp" => now(),
+            "payload" => [
+                "data" => [
+                    "id" => $user->id,
+                    "username" => $user->username,
+                    "first_name" => $user->first_name,
+                    "last_name" => $user->last_name,
+                    "email" => $user->email,
+                    "access_token" => Auth::getAccessToken(),
+                ],
+            ],
+        ]
+    )
+        ->withCookie(getCreatedCookieAccessTokenVerifier(Auth::getAccessTokenVerifier()))
+        ->withCookie(getCreatedCookieRefreshToken(Auth::getRefreshToken()));
+}
+
+public function refresh(): JsonResponse
+{
+    Auth::refreshToken(Auth::user());
+
+    /** @var User $user */
+    $user = Auth::user();
+    return response()->json(
+        [
+            "code" => "SUCCESS",
+            "message" => "Logged in successfully.",
+            "timestamp" => now(),
+            "payload" => [
+                "data" => [
+                    "id" => $user->id,
+                    "username" => $user->username,
+                    "first_name" => $user->first_name,
+                    "last_name" => $user->last_name,
+                    "email" => $user->email,
+                    "access_token" => Auth::getAccessToken()
+                ],
+            ],
+        ]
+    )
+        ->withCookie(getCreatedCookieAccessTokenVerifier(Auth::getAccessTokenVerifier()))
+        ->withCookie(getCreatedCookieRefreshToken(Auth::getRefreshToken()));
+}
 ```
 
 ### Logout User
