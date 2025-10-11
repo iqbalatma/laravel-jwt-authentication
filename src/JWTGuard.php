@@ -12,11 +12,13 @@ use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
+use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTModelNotCompatibleWithJWTSubjectException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTSubject;
-use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
+use Iqbalatma\LaravelJwtAuthentication\Services\DecodingService;
+use Iqbalatma\LaravelJwtAuthentication\Services\EncodingService;
 use Iqbalatma\LaravelJwtAuthentication\Traits\AuthEventTrait;
 
 /**
@@ -36,9 +38,10 @@ class JWTGuard implements Guard
     protected string|null $accessTokenVerifier;
 
     public function __construct(
-        protected JWTService $jwtService,
-        UserProvider         $provider,
-        protected Dispatcher $events
+        protected EncodingService $encodingService,
+        protected DecodingService $decodingService,
+        UserProvider              $provider,
+        protected Dispatcher      $events
     )
     {
         $this->provider = $provider;
@@ -60,8 +63,10 @@ class JWTGuard implements Guard
 
     /**
      * @param array $credentials
+     * @param bool $isUsingCookie
      * @return bool
      * @throws JWTInvalidActionException
+     * @throws JWTMissingRequiredHeaderException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
      */
     public function validate(array $credentials = [], bool $isUsingCookie = true): bool
@@ -75,8 +80,8 @@ class JWTGuard implements Guard
      * @param bool $isUsingCookie
      * @param bool $isGetToken
      * @return bool|array
-     * @throws JWTInvalidActionException
      * @throws JWTModelNotCompatibleWithJWTSubjectException
+     * @throws JWTMissingRequiredHeaderException
      */
     public function attempt(array $credentials, bool $isUsingCookie = true, bool $isGetToken = true): bool|array
     {
@@ -96,16 +101,22 @@ class JWTGuard implements Guard
             }
             if ($isGetToken) {
                 $this->accessTokenVerifier = Str::uuid();
-                $this->accessToken = $this->jwtService->generateToken(
+                $accessTokenJti = Str::uuid();
+                $refreshTokenJti = Str::uuid();
+                $this->accessToken = $this->encodingService->generateToken(
                     type: JWTTokenType::ACCESS,
                     user: $user,
                     atv: $this->accessTokenVerifier,
-                    isUsingCookie: $isUsingCookie
+                    isUsingCookie: $isUsingCookie,
+                    jti: $accessTokenJti,
+                    pti: $refreshTokenJti
                 );
-                $this->refreshToken = $this->jwtService->generateToken(
+                $this->refreshToken = $this->encodingService->generateToken(
                     type: JWTTokenType::REFRESH,
                     user: $user,
-                    isUsingCookie: $isUsingCookie
+                    isUsingCookie: $isUsingCookie,
+                    jti: $refreshTokenJti,
+                    pti: $accessTokenJti
                 );
 
 
@@ -131,7 +142,7 @@ class JWTGuard implements Guard
      * @param bool $isUsingCookie
      * @return array
      * @throws JWTEntityDoesNotExistsException
-     * @throws JWTInvalidActionException
+     * @throws JWTMissingRequiredHeaderException
      */
     public function login(JWTSubject|null $user, bool $isUsingCookie = true): array
     {
@@ -141,8 +152,23 @@ class JWTGuard implements Guard
         $this->fireLoginEvent($user);
         $this->setUser($user);
         $this->accessTokenVerifier = Str::uuid();
-        $this->accessToken = $this->jwtService->generateToken(type: JWTTokenType::ACCESS, user: $user, atv: $this->accessTokenVerifier, isUsingCookie: $isUsingCookie);
-        $this->refreshToken = $this->jwtService->generateToken(type: JWTTokenType::REFRESH, user: $user, isUsingCookie: $isUsingCookie);
+        $accessTokenJti = Str::uuid();
+        $refreshTokenJti = Str::uuid();
+        $this->accessToken = $this->encodingService->generateToken(
+            type: JWTTokenType::ACCESS,
+            user: $user,
+            atv: $this->accessTokenVerifier,
+            isUsingCookie: $isUsingCookie,
+            jti: $accessTokenJti,
+            pti: $refreshTokenJti
+        );
+        $this->refreshToken = $this->encodingService->generateToken(
+            type: JWTTokenType::REFRESH,
+            user: $user,
+            isUsingCookie: $isUsingCookie,
+            jti: $refreshTokenJti,
+            pti: $accessTokenJti
+        );
         return [
             "access_token" => $this->accessToken,
             "refresh_token" => $this->refreshToken,
@@ -153,11 +179,12 @@ class JWTGuard implements Guard
 
     /**
      * #logout will invalidate current user token
+     * @param bool $isBlacklistBoth
      * @return void
      */
-    public function logout(): void
+    public function logout(bool $isBlacklistBoth = false): void
     {
-        resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $this->jwtService->getRequestedIua());
+        resolve(JWTBlacklistService::class)->blacklistToken($isBlacklistBoth);
         $this->user = null;
     }
 
@@ -165,21 +192,25 @@ class JWTGuard implements Guard
     /**
      * @param JWTSubject|null $user
      * @param bool $isUsingCookie
+     * @param bool $isBlacklistBoth
      * @return array
      * @throws JWTEntityDoesNotExistsException
      * @throws JWTInvalidActionException
      * @throws JWTInvalidTokenTypeException
+     * @throws JWTMissingRequiredHeaderException
      * @throws JWTUnauthenticatedUserException
      */
-    public function refreshToken(JWTSubject|null $user, bool $isUsingCookie = true): array
+    public function refreshToken(JWTSubject|null $user, bool $isUsingCookie = true, bool $isBlacklistBoth = true): array
     {
-        if ($this->jwtService->getRequestedType() !== JWTTokenType::REFRESH->name) {
+        if ($this->decodingService->getRequestedType() !== JWTTokenType::REFRESH->name) {
             throw new JWTInvalidTokenTypeException("Refresh token only can be done using refresh token type authorization");
         }
 
         if (!$user) {
             throw new JWTUnauthenticatedUserException("Regenerate token failed. User is not defined");
         }
+
+        resolve(JWTBlacklistService::class)->blacklistToken($isBlacklistBoth);
 
         #this login already generate access token and refresh token so we can call access token and refresh token directly
         $this->login($user, $isUsingCookie);

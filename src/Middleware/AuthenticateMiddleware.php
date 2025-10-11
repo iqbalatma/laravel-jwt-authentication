@@ -11,28 +11,26 @@ use Illuminate\Support\Facades\Hash;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTAccessTokenIssuerMismatchException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidIssuedUserAgent;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidTokenTypeException;
-use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredHeaderException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTMissingRequiredTokenException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTUnauthenticatedUserException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTBlacklistService;
+use Iqbalatma\LaravelJwtAuthentication\Services\DecodingService;
 use Iqbalatma\LaravelJwtAuthentication\Services\IncidentTimeService;
-use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthenticateMiddleware
 {
-    protected string|null $userAgentFromRequest;
     protected string|null $tokenFromRequest;
     protected bool $isRefreshTokenFromHeader;
+    protected string $tokenType;
 
-    public function __construct(protected JWTService $jwtService, protected readonly Request $request)
+    public function __construct(protected DecodingService $decodingService, protected readonly Request $request)
     {
-        $this->userAgentFromRequest = null;
         $this->tokenFromRequest = null;
         $this->isRefreshTokenFromHeader = false;
+        $this->tokenType = "";
     }
 
     /**
@@ -40,10 +38,8 @@ class AuthenticateMiddleware
      * @param Closure $next
      * @param string $tokenType
      * @return Response
-     * @throws JWTInvalidIssuedUserAgent
      * @throws JWTInvalidTokenException
      * @throws JWTInvalidTokenTypeException
-     * @throws JWTMissingRequiredHeaderException
      * @throws JWTMissingRequiredTokenException
      * @throws JWTUnauthenticatedUserException
      * @throws JWTAccessTokenIssuerMismatchException
@@ -51,16 +47,11 @@ class AuthenticateMiddleware
      */
     public function handle(Request $request, Closure $next, string $tokenType = JWTTokenType::ACCESS->name): Response
     {
-        $tokenType = strtoupper($tokenType);
-        if (!in_array($tokenType, JWTTokenType::names(), true)) {
-            throw new JWTInvalidTokenTypeException();
-        }
         IncidentTimeService::check();
-        $this->setUserAgent()
-            ->setToken($tokenType)
+        $this->checkMiddlewareTokenType($tokenType)
+            ->setToken()
             ->checkIsTokenSignatureValid()
-            ->checkUserAgent()
-            ->checkTokenType($tokenType)
+            ->checkTokenType()
             ->checkTokenBlacklist()
             ->checkAccessTokenVerifier()
             ->setAuthenticatedUser();
@@ -68,26 +59,23 @@ class AuthenticateMiddleware
         return $next($request);
     }
 
+
     /**
-     * @param string|null $userAgent
-     * @return AuthenticateMiddleware
-     * @throws JWTMissingRequiredHeaderException
+     * @param string $tokenType
+     * @return $this
+     * @throws JWTInvalidTokenTypeException
      */
-    protected function setUserAgent(string|null $userAgent = null): self
+    protected function checkMiddlewareTokenType(string $tokenType): self
     {
-        if ($userAgent) {
-            $this->userAgentFromRequest = $userAgent;
-            return $this;
+        $this->tokenType = strtoupper($tokenType);
+        if (!in_array($tokenType, JWTTokenType::names(), true)) {
+            throw new JWTInvalidTokenTypeException();
         }
-
-        if (!$this->request->userAgent()) {
-            throw new JWTMissingRequiredHeaderException("Missing required header User-Agent");
-        }
-
-        $this->userAgentFromRequest = $this->request->userAgent();
 
         return $this;
     }
+
+
 
     /**
      * @param $token
@@ -110,50 +98,46 @@ class AuthenticateMiddleware
     }
 
     /**
-     * @param string $tokenType
      * @param string|null $token
      * @return AuthenticateMiddleware
-     * @throws JWTMissingRequiredTokenException
      * @throws JWTInvalidTokenException
+     * @throws JWTMissingRequiredTokenException
      */
-    protected function setToken(string $tokenType, string|null $token = null): self
+    protected function setToken(string|null $token = null): self
     {
         if ($token) {
             $this->tokenFromRequest = $token;
             return $this;
         }
 
-        if ($tokenType === JWTTokenType::ACCESS->name) {
+        #FOR ACCESS TOKEN
+        if ($this->tokenType === JWTTokenType::ACCESS->name) {
             if (!$this->request->hasHeader("authorization") || $this->request->header("authorization") === null) {
                 throw new JWTMissingRequiredTokenException("Missing required header Authorization");
             }
 
             $this->tokenFromRequest = $this->request->bearerToken();
         } else {
-            if (getJWTRefreshTokenMechanism() === 'cookie') {
-                if (!($jwtRefreshToken = Cookie::get(config("jwt.refresh_token.key")))) {
-                    /** could be not using cookie (for mobile) that's why we get token from bearer and need to check iuc */
-                    $this->tokenFromRequest = $this->request->bearerToken();
-                    if (!$this->tokenFromRequest) {
-                        throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
-                    }
-                    $this->isRefreshTokenFromHeader = true;
-                }
-
-                if ($jwtRefreshToken) {
-                    $this->tokenFromRequest = $jwtRefreshToken;
-                }
-            } else {
-                if (!$this->request->hasHeader("authorization")) {
-                    throw new JWTMissingRequiredTokenException("Missing required header Authorization");
-                }
-
-                $this->tokenFromRequest = $this->request->bearerToken();
+            #FOR REFRESH TOKEN
+            $jwtRefreshToken = null;
+            if (Cookie::get(config("jwt.refresh_token.key"))){
+                $jwtRefreshToken = Cookie::get(config("jwt.refresh_token.key"));
+            }else{
+                $jwtRefreshToken = $this->request->bearerToken();
+                $this->isRefreshTokenFromHeader = true;
             }
+
+            if (!$jwtRefreshToken) {
+                throw new JWTMissingRequiredTokenException("Missing required jwt refresh token");
+            }
+
+            $this->tokenFromRequest = $jwtRefreshToken;
         }
+
         if (!$this->isJWT($this->tokenFromRequest)) {
             throw new JWTInvalidTokenException("Invalid token format");
         }
+
         return $this;
     }
 
@@ -166,10 +150,11 @@ class AuthenticateMiddleware
      */
     protected function checkIsTokenSignatureValid(): self
     {
-        $this->jwtService->decodeJWT($this->tokenFromRequest);
-        if ($this->isRefreshTokenFromHeader && $this->jwtService->getIsUsingCookie()) {
+        $this->decodingService->decodeJWT($this->tokenFromRequest);
+        if ($this->isRefreshTokenFromHeader && $this->decodingService->getIsUsingCookie()) {
             throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
         }
+
         return $this;
     }
 
@@ -182,33 +167,18 @@ class AuthenticateMiddleware
     protected function checkAccessTokenVerifier(): self
     {
         if (
-            $this->jwtService->getIsUsingCookie() &&
-            $this->jwtService->getRequestedType() === JWTTokenType::ACCESS->name &&
+            $this->decodingService->getIsUsingCookie() &&
+            $this->decodingService->getRequestedType() === JWTTokenType::ACCESS->name &&
             config("jwt.is_using_access_token_verifier") &&
-            !Hash::check(Cookie::get(config("jwt.access_token_verifier.key")), $this->jwtService->getRequestedAtv())
+            !Hash::check(Cookie::get(config("jwt.access_token_verifier.key")), $this->decodingService->getRequestedAtv())
         ) {
-            (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->jwtService))->blacklistToken(true);
+            (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->decodingService))->blacklistToken(true);
             throw new JWTAccessTokenIssuerMismatchException();
         }
 
         return $this;
     }
 
-    /**
-     * @description when token generate from user agent A
-     * but, when check token and user send it from user agent B
-     * we will throw JWTInvalidIssuedUserAgent and blacklist that token
-     * @return AuthenticateMiddleware
-     * @throws JWTInvalidIssuedUserAgent
-     */
-    protected function checkUserAgent(): self
-    {
-        if (($iua = $this->jwtService->getRequestedIua()) !== $this->userAgentFromRequest) {
-            resolve(JWTBlacklistService::class)->blacklistToken(userAgent: $iua);
-            throw new JWTInvalidIssuedUserAgent();
-        }
-        return $this;
-    }
 
 
     /**
@@ -219,18 +189,20 @@ class AuthenticateMiddleware
      * example: auth.jwt:REFRESH
      * default type is ACCESS
      *
-     * @param string $tokenType
      * @return AuthenticateMiddleware
      * @throws JWTInvalidTokenTypeException
      */
-    protected function checkTokenType(string $tokenType): self
+    protected function checkTokenType(): self
     {
+        $tokenType = $this->tokenType;
         /**
          * check condition when requested token type is different with middleware token type
          */
-        if (($requestedTokenType = $this->jwtService->getRequestedType()) !== $tokenType) {
+        if (($requestedTokenType = $this->decodingService->getRequestedType()) !== $tokenType) {
             throw new JWTInvalidTokenTypeException("This protected resource need token type $tokenType, and you provide $requestedTokenType");
         }
+
+
 
         return $this;
     }
@@ -242,6 +214,7 @@ class AuthenticateMiddleware
      */
     protected function checkTokenBlacklist(): self
     {
+
         if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
             throw new JWTInvalidTokenException();
         }
@@ -256,7 +229,7 @@ class AuthenticateMiddleware
      */
     protected function setAuthenticatedUser(): void
     {
-        $user = Auth::getProvider()->retrieveById($this->jwtService->getRequestedSub());
+        $user = Auth::getProvider()->retrieveById($this->decodingService->getRequestedSub());
         if (!$user) {
             throw new JWTUnauthenticatedUserException("User of this token does not exists");
         }

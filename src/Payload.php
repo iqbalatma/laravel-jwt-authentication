@@ -39,9 +39,11 @@ class Payload implements Arrayable
 
     #access token verifier : verifier for access token binding to prevent xss
     public string|null $atv;
+    #pair token identifier : another token identifier
+    public string|null $pti;
 
 
-    public function __construct(JWTTokenType $tokenType)
+    public function __construct(JWTTokenType $tokenType, string $jti = null, string $pti = null)
     {
         $now = time();
         if (!($userAgent = request()?->userAgent())) {
@@ -51,7 +53,8 @@ class Payload implements Arrayable
         $this->iat = $now;
         $this->exp = $now;
         $this->nbf = $now;
-        $this->jti = Str::uuid();
+        $this->jti = $jti ?? Str::uuid()->toString();
+        $this->pti = $pti;
         $this->sub = null;
         $this->iua = $userAgent;
         $this->iuc = true;
@@ -90,7 +93,7 @@ class Payload implements Arrayable
     }
 
     /**
-     * @param string $atv
+     * @param string|null $atv
      * @return $this
      */
     public function setAtv(string|null $atv): self
@@ -115,6 +118,7 @@ class Payload implements Arrayable
             'iuc' => $this->iuc,
             'type' => $this->type,
             'atv' => $this->atv,
+            'pti' => $this->pti,
         ];
     }
 }

@@ -127,7 +127,6 @@ return [
     |
     */
     'refresh_token' => [
-        'mechanism' => 'cookie', //cookie/header
         'key' => 'jwt_refresh_token',
         'http_only' => true,
         'path' => "/",

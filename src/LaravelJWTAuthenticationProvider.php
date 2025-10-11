@@ -12,8 +12,9 @@ use Iqbalatma\LaravelJwtAuthentication\Console\JWTGenerateSecretCommand;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTKeyNotAvailableException;
 use Iqbalatma\LaravelJwtAuthentication\Interfaces\JWTKey;
 use Iqbalatma\LaravelJwtAuthentication\Middleware\AuthenticateMiddleware;
+use Iqbalatma\LaravelJwtAuthentication\Services\DecodingService;
+use Iqbalatma\LaravelJwtAuthentication\Services\EncodingService;
 use Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService;
-use Iqbalatma\LaravelJwtAuthentication\Services\JWTService;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTCertKey;
 use Iqbalatma\LaravelJwtAuthentication\Services\Keys\JWTSecretKey;
 
@@ -43,16 +44,21 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
             throw new JWTKeyNotAvailableException();
         });
 
-        #singleton JWTService
-        $this->app->singleton(JWTService::class, function (Application $app) {
+        #singleton EncodingService
+        $this->app->singleton(EncodingService::class, function (Application $app) {
             $jwtKey = $app->make(JWTKey::class);
-            return new JWTService($jwtKey);
+            return new EncodingService($jwtKey);
+        });
+
+        $this->app->singleton(DecodingService::class, function (Application $app) {
+            $jwtKey = $app->make(JWTKey::class);
+            return new DecodingService($jwtKey);
         });
 
         #binding blacklist service
         $this->app->bind(Interfaces\JWTBlacklistService::class, function (Application $app) {
-            $jwtService = $app->make(JWTService::class);
-            return new JWTBlacklistService($jwtService);
+            $decodingService = $app->make(DecodingService::class);
+            return new JWTBlacklistService($decodingService);
         });
 
         #aliasing middleware
@@ -80,7 +86,8 @@ class LaravelJWTAuthenticationProvider extends ServiceProvider
          */
         Auth::extend("jwt", static function (Application $app, string $name, array $config) {
             return new JWTGuard(
-                $app->make(JWTService::class),
+                $app->make(EncodingService::class),
+                $app->make(DecodingService::class),
                 Auth::createUserProvider($config["provider"]),
                 $app[Dispatcher::class]
             );
