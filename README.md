@@ -92,8 +92,6 @@ But if you do not define private and public key, jwt will use secret key for sig
 - ES256K
   
 ```php
-<?php
-
 return [
     /*
     |--------------------------------------------------------------------------
@@ -221,7 +219,6 @@ return [
     |
     */
     'refresh_token' => [
-        'mechanism' => 'cookie', //cookie/header
         'key' => 'jwt_refresh_token',
         'http_only' => true,
         'path' => "/",
@@ -249,6 +246,7 @@ return [
         'same_site' => 'lax',
     ]
 ];
+
 ```
 ***
 
@@ -303,17 +301,13 @@ $credentials = [
 ];
 
 #this attempt method will return boolean when user validation success
-Auth::attempt($credentials);
-
-#passing true on second parameter to get return array of access_token, refresh_token, and access token
-Auth::attempt($credentials, true);
+Auth::attempt($credentials, true, true);
+#first parameter for credential, second parameter to tell that authentication using cookie httpOnly, third parameter to get
 
 #if you are using access token verifier by is_using_access_token_verifier = true, its mean you need to set 
 #access token in cookie httpOnly
-getCreatedCookieAccessTokenVerifier("put your access token verifier here");
 return response()->json([
     "access_token" => "...",
-    "refresh_token" => "...",
 ])->withCookie(getCreatedCookieAccessTokenVerifier("put your access token verifier here"));
 
 #full example
@@ -385,6 +379,7 @@ This feature used for invalidate and blacklist current authorization token
 use Illuminate\Support\Facades\Auth;
 
 Auth::logout();
+Auth::logout(true); #add parameter true for revoke both token pair (access and refresh)
 ```
 
 ### Refresh Token
@@ -430,37 +425,3 @@ Auth::getAccessTokenVerifier(); #to get access token verifier
 #if you are not using default guard, you need to specify the guard
 Auth::guard("jwt")->getAccessToken();
 ```
-
-## Issued Token Service
-This is a service related to issued token, access or refresh token. You can get list of issued token with their user-agent or revoke the token
-
-```php
-use Iqbalatma\LaravelJwtAuthentication\Services\IssuedTokenService;
-use Illuminate\Support\Facades\Auth;
-
-#use to get all issued token
-IssuedTokenService::getAllToken(Auth::id());
-
-#use to get all issued refresh token
-IssuedTokenService::getAllRefreshToken(Auth::id())
-
-#use to get all issued access token
-IssuedTokenService::getAllAccessToken(Auth::id());
-
-#use to revoke refresh token by user agent string name
-IssuedTokenService::revokeRefreshTokenByUserAgent('user-agent-name', Auth::id());
-
-#use to revoke access token by user agent string name
-IssuedTokenService::revokeAccessTokenByUserAgent('user-agent-name', Auth::id());
-
-#use to revoke both access and refresh token by user agent string name
-IssuedTokenService::revokeTokenByUserAgent('user-agent-name', Auth::id());
-
-#use to revoke all token
-IssuedTokenService::revokeAllToken(Auth::id());
-
-#use to revoke all token but current token
-IssuedTokenService::revokeAllTokenOnOtherUserAgent(Auth::id());
-```
-
-
