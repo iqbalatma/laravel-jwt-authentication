@@ -15,7 +15,7 @@
         }
     ],
     "require": {
-        "firebase/php-jwt": "^6.9",
+        "firebase/php-jwt": "^7",
         "archtechx/enums" :  "^1.0.0",
         "ext-openssl": "*",
         "php": "^8.3"
