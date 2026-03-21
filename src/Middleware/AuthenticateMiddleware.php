@@ -76,7 +76,6 @@ class AuthenticateMiddleware
     }
 
 
-
     /**
      * @param $token
      * @return bool
@@ -120,9 +119,9 @@ class AuthenticateMiddleware
         } else {
             #FOR REFRESH TOKEN
             $jwtRefreshToken = null;
-            if (Cookie::get(config("jwt.refresh_token.key"))){
+            if (Cookie::get(config("jwt.refresh_token.key"))) {
                 $jwtRefreshToken = Cookie::get(config("jwt.refresh_token.key"));
-            }else{
+            } else {
                 $jwtRefreshToken = $this->request->bearerToken();
                 $this->isRefreshTokenFromHeader = true;
             }
@@ -180,7 +179,6 @@ class AuthenticateMiddleware
     }
 
 
-
     /**
      * @description when user pass token type refresh to endpoint that require token type
      * access, request will be rejected.
@@ -201,7 +199,6 @@ class AuthenticateMiddleware
         if (($requestedTokenType = $this->decodingService->getRequestedType()) !== $tokenType) {
             throw new JWTInvalidTokenTypeException("This protected resource need token type $tokenType, and you provide $requestedTokenType");
         }
-
 
 
         return $this;
@@ -234,5 +231,19 @@ class AuthenticateMiddleware
             throw new JWTUnauthenticatedUserException("User of this token does not exists");
         }
         Auth::guard(config("jwt.guard"))->setUser($user);
+
+        $accessToken = "";
+
+        if ($this->tokenType === JWTTokenType::ACCESS->name) {
+            $accessToken = $this->request->bearerToken() ?? "";
+        }
+
+        $refreshToken = (Cookie::get(config("jwt.refresh_token.key")) ?? $this->request->bearerToken()) ?? "";
+        $accessTokenVerifier = Cookie::get(config("jwt.access_token_verifier.key")) ?? "";
+
+
+        Auth::guard(config("jwt.guard"))->setAccessToken($accessToken);
+        Auth::guard(config("jwt.guard"))->setRefreshToken($refreshToken);
+        Auth::guard(config("jwt.guard"))->setAccessTokenVerifier($accessTokenVerifier);
     }
 }

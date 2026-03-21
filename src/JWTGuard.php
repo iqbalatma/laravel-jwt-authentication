@@ -256,4 +256,31 @@ class JWTGuard implements Guard
     {
         return $this->accessTokenVerifier;
     }
+
+    /**
+     * @param string $accessToken
+     * @return void
+     */
+    public function setAccessToken(string $accessToken): void
+    {
+        $this->accessToken = $accessToken;
+    }
+
+    /**
+     * @param string $refreshToken
+     * @return void
+     */
+    public function setRefreshToken(string $refreshToken): void
+    {
+        $this->refreshToken = $refreshToken;
+    }
+
+    /**
+     * @param string $accessTokenVerifier
+     * @return void
+     */
+    public function setAccessTokenVerifier(string $accessTokenVerifier):void
+    {
+        $this->accessTokenVerifier = $accessTokenVerifier;
+    }
 }
