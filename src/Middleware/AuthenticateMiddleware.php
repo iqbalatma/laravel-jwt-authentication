@@ -261,12 +261,6 @@ class AuthenticateMiddleware
      */
     protected function setAuthenticatedUser(): void
     {
-        $user = Auth::getProvider()->retrieveById($this->decodingService->getRequestedSub());
-        if (!$user) {
-            throw new JWTUnauthenticatedUserException("User of this token does not exists");
-        }
-        Auth::guard(config("jwt.guard"))->setUser($user);
-
         $accessToken = "";
         if ($this->tokenType === JWTTokenType::ACCESS->name) {
             $accessToken = $this->request->bearerToken() ?? "";

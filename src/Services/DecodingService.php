@@ -36,17 +36,14 @@ class DecodingService extends BaseJWTService
      * @param string|null $key
      * @return string|array
      */
-    public function getRequestedTokenPayloads(null|string $key = null): string|array
+    public function getRequestedTokenPayloads(null|string $key = null): string|array|null
     {
         if (!isset($this->requestTokenPayloads)) {
-            throw new RuntimeException("Token payloads are not set.");
+            $this->requestTokenPayloads = [];
         }
 
         if ($key) {
-            if (isset($this->requestTokenPayloads[$key])) {
-                return $this->requestTokenPayloads[$key];
-            }
-            throw new RuntimeException("Undefined array key $key");
+            return $this->requestTokenPayloads[$key] ?? null;
         }
 
         return $this->requestTokenPayloads;
@@ -92,77 +89,77 @@ class DecodingService extends BaseJWTService
 
 
     /**
-     * @return string
+     * @return string|null
      */
-    public function getRequestedIss(): string
+    public function getRequestedIss(): string|null
     {
         return $this->getRequestedTokenPayloads("iss");
     }
 
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedIat(): string
+    public function getRequestedIat(): string|null
     {
         return $this->getRequestedTokenPayloads("iat");
     }
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedExp(): string
+    public function getRequestedExp(): string|null
     {
         return $this->getRequestedTokenPayloads("exp");
     }
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedNbf(): string
+    public function getRequestedNbf(): string|null
     {
         return $this->getRequestedTokenPayloads("nbf");
     }
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedJti(): string
+    public function getRequestedJti(): string|null
     {
         return $this->getRequestedTokenPayloads("jti");
     }
 
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedSub(): string
+    public function getRequestedSub(): string|null
     {
         return $this->getRequestedTokenPayloads("sub");
     }
 
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedIua(): string
+    public function getRequestedIua(): string|null
     {
         return $this->getRequestedTokenPayloads("iua");
     }
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedAtv(): string
+    public function getRequestedAtv(): string|null
     {
         return $this->getRequestedTokenPayloads("atv");
     }
 
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedType(): string
+    public function getRequestedType(): string|null
     {
         return $this->getRequestedTokenPayloads("type");
     }
@@ -176,9 +173,9 @@ class DecodingService extends BaseJWTService
     }
 
     /**
-     * @return string
+     * @return  string|null
      */
-    public function getRequestedPti(): string
+    public function getRequestedPti(): string|null
     {
         return $this->getRequestedTokenPayloads("pti");
     }

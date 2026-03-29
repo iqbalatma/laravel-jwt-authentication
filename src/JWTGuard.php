@@ -2,11 +2,14 @@
 
 namespace Iqbalatma\LaravelJwtAuthentication;
 
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\GuardHelpers;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTEntityDoesNotExistsException;
@@ -57,9 +60,44 @@ class JWTGuard implements Guard
      */
     public function user(): Authenticatable|null
     {
+        if (!$this->user) {
+            if ($this->decodingService->getRequestedSub()){
+                $this->setUser(Auth::getProvider()->retrieveById($this->decodingService->getRequestedSub()));
+            }
+        }
+
         return $this->user;
     }
 
+    /**
+     * Set the current user.
+     *
+     * @param AuthenticatableContract|JWTSubject|null $user
+     * @return $this
+     */
+    public function setUser(AuthenticatableContract|JWTSubject|null $user): self
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    /**
+     * Fire the login event.
+     *
+     * @param AuthenticatableContract|JWTSubject $user
+     * @param bool $remember
+     *
+     * @return void
+     */
+    protected function fireLoginEvent(Authenticatable|JWTSubject $user, bool $remember = false): void
+    {
+        $this->events->dispatch(new Login(
+            $this->name,
+            $user,
+            $remember
+        ));
+    }
 
     /**
      * @param array $credentials
