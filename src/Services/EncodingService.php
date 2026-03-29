@@ -41,7 +41,7 @@ class EncodingService extends BaseJWTService
             ->addExpTTL($type === JWTTokenType::ACCESS ?
                 $this->accessTokenTTL : $this->refreshTokenTTL
             )
-            ->setSub($user->getAuthIdentifier())
+            ->setSub($user->getJWTIdentifier())
             ->setIuc($isUsingCookie)
             ->setAtv($atv);
 

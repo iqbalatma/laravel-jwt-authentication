@@ -100,31 +100,7 @@ class JWTGuard implements Guard
                 throw new JWTModelNotCompatibleWithJWTSubjectException();
             }
             if ($isGetToken) {
-                $this->accessTokenVerifier = Str::uuid();
-                $accessTokenJti = Str::uuid();
-                $refreshTokenJti = Str::uuid();
-                $this->accessToken = $this->encodingService->generateToken(
-                    type: JWTTokenType::ACCESS,
-                    user: $user,
-                    atv: $this->accessTokenVerifier,
-                    isUsingCookie: $isUsingCookie,
-                    jti: $accessTokenJti,
-                    pti: $refreshTokenJti
-                );
-                $this->refreshToken = $this->encodingService->generateToken(
-                    type: JWTTokenType::REFRESH,
-                    user: $user,
-                    isUsingCookie: $isUsingCookie,
-                    jti: $refreshTokenJti,
-                    pti: $accessTokenJti
-                );
-
-
-                return [
-                    "access_token" => $this->accessToken,
-                    "refresh_token" => $this->refreshToken,
-                    "access_token_verifier" => $this->accessTokenVerifier
-                ];
+                return $this->generateAndGetToken($user, $isUsingCookie);
             }
 
             return true;
@@ -151,29 +127,8 @@ class JWTGuard implements Guard
         }
         $this->fireLoginEvent($user);
         $this->setUser($user);
-        $this->accessTokenVerifier = Str::uuid();
-        $accessTokenJti = Str::uuid();
-        $refreshTokenJti = Str::uuid();
-        $this->accessToken = $this->encodingService->generateToken(
-            type: JWTTokenType::ACCESS,
-            user: $user,
-            atv: $this->accessTokenVerifier,
-            isUsingCookie: $isUsingCookie,
-            jti: $accessTokenJti,
-            pti: $refreshTokenJti
-        );
-        $this->refreshToken = $this->encodingService->generateToken(
-            type: JWTTokenType::REFRESH,
-            user: $user,
-            isUsingCookie: $isUsingCookie,
-            jti: $refreshTokenJti,
-            pti: $accessTokenJti
-        );
-        return [
-            "access_token" => $this->accessToken,
-            "refresh_token" => $this->refreshToken,
-            "access_token_verifier" => $this->accessTokenVerifier
-        ];
+
+        return $this->generateAndGetToken($user, $isUsingCookie);
     }
 
 
@@ -279,8 +234,42 @@ class JWTGuard implements Guard
      * @param string $accessTokenVerifier
      * @return void
      */
-    public function setAccessTokenVerifier(string $accessTokenVerifier):void
+    public function setAccessTokenVerifier(string $accessTokenVerifier): void
     {
         $this->accessTokenVerifier = $accessTokenVerifier;
+    }
+
+
+    /**
+     * @param JWTSubject $user
+     * @param bool $isUsingCookie
+     * @return array
+     * @throws JWTMissingRequiredHeaderException
+     */
+    public function generateAndGetToken(JWTSubject $user, bool $isUsingCookie): array
+    {
+        $this->accessTokenVerifier = Str::random(32);
+        $accessTokenJti = Str::uuid();
+        $refreshTokenJti = Str::uuid();
+        $this->accessToken = $this->encodingService->generateToken(
+            type: JWTTokenType::ACCESS,
+            user: $user,
+            atv: $this->accessTokenVerifier,
+            isUsingCookie: $isUsingCookie,
+            jti: $accessTokenJti,
+            pti: $refreshTokenJti
+        );
+        $this->refreshToken = $this->encodingService->generateToken(
+            type: JWTTokenType::REFRESH,
+            user: $user,
+            isUsingCookie: $isUsingCookie,
+            jti: $refreshTokenJti,
+            pti: $accessTokenJti
+        );
+        return [
+            "access_token" => $this->accessToken,
+            "refresh_token" => $this->refreshToken,
+            "access_token_verifier" => $this->accessTokenVerifier
+        ];
     }
 }

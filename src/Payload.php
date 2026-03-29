@@ -98,14 +98,15 @@ class Payload implements Arrayable
      */
     public function setAtv(string|null $atv): self
     {
-        $this->atv = $this->type === JWTTokenType::ACCESS->name ? Hash::make($atv) : null;
+        $this->atv = $this->type === JWTTokenType::ACCESS->name ?  base64_encode(hash_hmac('sha256', $atv, config("app.key"), true)) : null;
+
         return $this;
     }
 
     /**
      * @return array
      */
-    public function toArray():array
+    public function toArray(): array
     {
         return [
             'iss' => $this->iss,

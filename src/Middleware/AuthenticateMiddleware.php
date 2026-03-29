@@ -6,8 +6,10 @@ use Closure;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Iqbalatma\LaravelJwtAuthentication\Enums\JWTTokenType;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTAccessTokenIssuerMismatchException;
 use Iqbalatma\LaravelJwtAuthentication\Exceptions\JWTInvalidActionException;
@@ -25,12 +27,14 @@ class AuthenticateMiddleware
     protected string|null $tokenFromRequest;
     protected bool $isRefreshTokenFromHeader;
     protected string $tokenType;
+    protected string|null $accessTokenVerifierFromCookie;
 
     public function __construct(protected DecodingService $decodingService, protected readonly Request $request)
     {
         $this->tokenFromRequest = null;
         $this->isRefreshTokenFromHeader = false;
         $this->tokenType = "";
+        $this->accessTokenVerifierFromCookie = Cookie::get(config("jwt.access_token_verifier.key"));
     }
 
     /**
@@ -149,9 +153,16 @@ class AuthenticateMiddleware
      */
     protected function checkIsTokenSignatureValid(): self
     {
-        $this->decodingService->decodeJWT($this->tokenFromRequest);
-        if ($this->isRefreshTokenFromHeader && $this->decodingService->getIsUsingCookie()) {
-            throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+        $signature = explode(".", $this->tokenFromRequest)[2] ?? null;
+        if ($payload = Cache::get($signature)) {
+            $this->decodingService->setRequestedTokenPayloads(json_decode($payload, true));
+        } else {
+            $this->decodingService->decodeJWT($this->tokenFromRequest);
+            if ($this->isRefreshTokenFromHeader && $this->decodingService->getIsUsingCookie()) {
+                throw new JWTMissingRequiredTokenException("Missing required cookie jwt refresh token");
+            }
+
+            Cache::put($signature, json_encode($this->decodingService->getRequestedTokenPayloads()), config("jwt.access_token_ttl"));
         }
 
         return $this;
@@ -165,13 +176,39 @@ class AuthenticateMiddleware
      */
     protected function checkAccessTokenVerifier(): self
     {
-        if (
-            $this->decodingService->getIsUsingCookie() &&
-            $this->decodingService->getRequestedType() === JWTTokenType::ACCESS->name &&
-            config("jwt.is_using_access_token_verifier") &&
-            !Hash::check(Cookie::get(config("jwt.access_token_verifier.key")), $this->decodingService->getRequestedAtv())
-        ) {
-            (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->decodingService))->blacklistToken(true);
+        $accessTokenVerifierFromJWT = $this->decodingService->getRequestedAtv();
+        $hashFromCookie = Cache::get($this->accessTokenVerifierFromCookie);
+        $isAtvValid = false;
+        if ($hashFromCookie) {
+            $isAtvValid = $hashFromCookie === $accessTokenVerifierFromJWT;
+        }
+
+        // 3. Jika tidak ada di cache, lakukan pengecekan Hash yang berat (Slow Path)
+        if (!$isAtvValid &&
+            hash_equals(
+                $hashFromCookie = base64_encode(hash_hmac(
+                    'sha256',
+                    $this->accessTokenVerifierFromCookie,
+                    config("app.key"), true)),
+                $accessTokenVerifierFromJWT
+            )) {
+            $isAtvValid = true;
+            Cache::put(
+                $this->accessTokenVerifierFromCookie,
+                $hashFromCookie,
+                config("jwt.access_token_ttl")
+            );
+        }
+
+        // 4. Cek apakah kondisi pemblokiran terpenuhi
+        $isUsingCookie = $this->decodingService->getIsUsingCookie();
+        $isAccessToken = $this->decodingService->getRequestedType() === JWTTokenType::ACCESS->name;
+        $isEnabledInConfig = config("jwt.is_using_access_token_verifier");
+        if ($isEnabledInConfig && $isAccessToken && $isUsingCookie && !$isAtvValid) {
+            #blacklist token, could be stolen token via xss
+            (new \Iqbalatma\LaravelJwtAuthentication\Services\JWTBlacklistService($this->decodingService))
+                ->blacklistToken(true);
+
             throw new JWTAccessTokenIssuerMismatchException();
         }
 
@@ -211,11 +248,9 @@ class AuthenticateMiddleware
      */
     protected function checkTokenBlacklist(): self
     {
-
         if (resolve(JWTBlacklistService::class)->isTokenBlacklisted()) {
             throw new JWTInvalidTokenException();
         }
-
         return $this;
     }
 
@@ -233,13 +268,12 @@ class AuthenticateMiddleware
         Auth::guard(config("jwt.guard"))->setUser($user);
 
         $accessToken = "";
-
         if ($this->tokenType === JWTTokenType::ACCESS->name) {
             $accessToken = $this->request->bearerToken() ?? "";
         }
 
         $refreshToken = (Cookie::get(config("jwt.refresh_token.key")) ?? $this->request->bearerToken()) ?? "";
-        $accessTokenVerifier = Cookie::get(config("jwt.access_token_verifier.key")) ?? "";
+        $accessTokenVerifier = $this->accessTokenVerifierFromCookie ?? "";
 
 
         Auth::guard(config("jwt.guard"))->setAccessToken($accessToken);

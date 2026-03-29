@@ -70,6 +70,26 @@ class DecodingService extends BaseJWTService
         return $headers;
     }
 
+    /**
+     * @param array $payloads
+     * @return $this
+     */
+    public function setRequestedTokenPayloads(array $payloads): self
+    {
+        $this->requestTokenPayloads = $payloads;
+        return $this;
+    }
+
+    /**
+     * @param stdClass $headers
+     * @return $this
+     */
+    public function setRequestedTokenHeaders(stdClass $headers): self
+    {
+        $this->requestTokenHeaders = $headers;
+        return $this;
+    }
+
 
     /**
      * @return string
