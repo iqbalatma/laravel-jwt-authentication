@@ -176,6 +176,10 @@ class AuthenticateMiddleware
      */
     protected function checkAccessTokenVerifier(): self
     {
+        if ($this->tokenType !== JWTTokenType::ACCESS->name) {
+            return $this;
+        }
+        
         $accessTokenVerifierFromJWT = $this->decodingService->getRequestedAtv();
         $hashFromCookie = Cache::get($this->accessTokenVerifierFromCookie);
         $isAtvValid = false;
